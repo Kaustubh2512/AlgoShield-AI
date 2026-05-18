@@ -15,7 +15,7 @@ interface FloatingWalletProps {
 const WalletItem: React.FC<FloatingWalletProps> = ({ delay, duration, x, y, scale, icon, color }) => {
   return (
     <motion.div
-      className="absolute pointer-events-none opacity-20 filter blur-[0.5px]"
+      className="absolute pointer-events-none opacity-75 filter blur-[0.2px]"
       style={{ top: y, left: x, scale }}
       initial={{ y: 0, x: 0 }}
       animate={{
@@ -51,15 +51,15 @@ const WalletItem: React.FC<FloatingWalletProps> = ({ delay, duration, x, y, scal
 
 export const FloatingWallets: React.FC = () => {
   const wallets = [
-    { delay: 0, duration: 18, x: '10%', y: '25%', scale: 0.85, icon: <Wallet className="w-5 h-5 text-primary" />, color: 'rgba(0, 255, 136, 0.2)' },
-    { delay: 3, duration: 22, x: '82%', y: '15%', scale: 0.9, icon: <CreditCard className="w-5 h-5 text-secondary" />, color: 'rgba(0, 212, 255, 0.2)' },
-    { delay: 1.5, duration: 20, x: '75%', y: '65%', scale: 0.75, icon: <Coins className="w-5 h-5 text-amber-500" />, color: 'rgba(255, 170, 0, 0.2)' },
-    { delay: 4, duration: 24, x: '15%', y: '70%', scale: 0.8, icon: <Key className="w-5 h-5 text-pink-400" />, color: 'rgba(236, 72, 153, 0.2)' },
-    { delay: 2.5, duration: 19, x: '45%', y: '80%', scale: 0.7, icon: <Shield className="w-5 h-5 text-emerald-400" />, color: 'rgba(52, 211, 153, 0.15)' },
+    { delay: 0, duration: 18, x: '10%', y: '25%', scale: 0.85, icon: <Wallet className="w-5 h-5 text-primary" />, color: 'rgba(0, 255, 136, 0.3)' },
+    { delay: 3, duration: 22, x: '82%', y: '15%', scale: 0.9, icon: <CreditCard className="w-5 h-5 text-secondary" />, color: 'rgba(0, 212, 255, 0.3)' },
+    { delay: 1.5, duration: 20, x: '75%', y: '65%', scale: 0.75, icon: <Coins className="w-5 h-5 text-amber-500" />, color: 'rgba(255, 170, 0, 0.3)' },
+    { delay: 4, duration: 24, x: '15%', y: '70%', scale: 0.8, icon: <Key className="w-5 h-5 text-pink-400" />, color: 'rgba(236, 72, 153, 0.3)' },
+    { delay: 2.5, duration: 19, x: '45%', y: '80%', scale: 0.7, icon: <Shield className="w-5 h-5 text-emerald-400" />, color: 'rgba(52, 211, 153, 0.25)' },
   ];
 
   return (
-    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none">
+    <div className="absolute inset-0 z-[2] overflow-hidden pointer-events-none select-none">
       {wallets.map((w, i) => (
         <WalletItem key={i} {...w} />
       ))}

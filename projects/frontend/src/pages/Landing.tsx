@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import LogoLoop from '../components/LogoLoop';
 import Footer from '../components/Footer';
 import FloatingWallets from '../components/FloatingWallets';
+import FAQ from '../components/FAQ';
 
 export const Landing = () => {
   const { walletAddress, connectWallet } = useWallet();
@@ -110,6 +111,9 @@ export const Landing = () => {
             </motion.div>
           </div>
         </main>
+
+        {/* Premium FAQ Section */}
+        <FAQ />
 
         {/* Infinite Moving Logo Marquee */}
         <LogoLoop />

@@ -23,7 +23,7 @@ export const LogoLoop: React.FC = () => {
   ];
 
   return (
-    <div className="relative w-full overflow-hidden py-10 select-none pointer-events-auto border-t border-b border-white/5 bg-[#0B0F19]/40 backdrop-blur-sm">
+    <div className="relative w-full overflow-hidden py-10 select-none pointer-events-auto border-t border-b border-white/5 bg-[#0B0F19]/40 backdrop-blur-sm group/marquee">
       {/* Edge Fades for premium glass transition */}
       <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
       <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
@@ -31,7 +31,7 @@ export const LogoLoop: React.FC = () => {
       {/* Outer marquee container */}
       <div className="flex w-[200%] items-center overflow-hidden">
         {/* Track 1 */}
-        <div className="flex gap-8 shrink-0 items-center justify-around min-w-full animate-marquee hover:[animation-play-state:paused] cursor-pointer">
+        <div className="flex gap-8 shrink-0 items-center justify-around min-w-full animate-marquee group-hover/marquee:[animation-play-state:paused] cursor-pointer">
           {items.map((item, idx) => (
             <div 
               key={`t1-${idx}`} 
@@ -49,7 +49,7 @@ export const LogoLoop: React.FC = () => {
         </div>
 
         {/* Track 2 (Duplicate for seamless loop) */}
-        <div className="flex gap-8 shrink-0 items-center justify-around min-w-full animate-marquee hover:[animation-play-state:paused] cursor-pointer" aria-hidden="true">
+        <div className="flex gap-8 shrink-0 items-center justify-around min-w-full animate-marquee group-hover/marquee:[animation-play-state:paused] cursor-pointer" aria-hidden="true">
           {items.map((item, idx) => (
             <div 
               key={`t2-${idx}`} 

@@ -67,6 +67,9 @@ export default function Footer() {
         {/* BOTTOM BAR */}
         <div className="flex flex-wrap items-center justify-between gap-4 pt-8 border-t border-border mt-10">
           <span className="font-mono text-[11px] text-ghost opacity-50">© 2025 AlgoShield AI. Built on Algorand.</span>
+          <span className="font-mono text-xs text-primary font-bold tracking-[0.25em] uppercase bg-primary/10 border border-primary/20 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(0,255,136,0.1)] hover:bg-primary/20 hover:shadow-[0_0_25px_rgba(0,255,136,0.25)] transition-all duration-300">
+            ⚡ TEAM QANTAS
+          </span>
           <div className="font-mono text-[10px] text-ghost opacity-30">build: a3f8c21 · testnet · v0.1.0-prototype</div>
         </div>
       </div>
