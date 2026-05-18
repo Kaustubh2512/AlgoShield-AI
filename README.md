@@ -179,9 +179,4 @@ node bin/algoshield.js scan ./my-contract.teal
 
 Developed with ❤️ for the **Algorand 3.0 Hack Series 🐍**.
 
-- **Member 1**: Frontend Developer (React, Tailwind, Pera Wallet Integration)
-- **Member 2 (Kedar)**: AI/ML Developer (Scikit-learn models, SLM RAG pipeline, Supabase)
-- **Member 3**: Blockchain + SDK Developer (npm SDK, ARC-69 Minting, Notification Channels)
-- **Member 4**: Backend Lead (FastAPI, MongoDB, Project Coordinator)
-
 *Securing the decentralized future, one block at a time.* 🛡️
