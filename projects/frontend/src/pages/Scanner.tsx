@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Navbar } from '../components/Navbar';
 import { useWallet } from '../context/WalletContext';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, UploadCloud, Search, ShieldAlert } from 'lucide-react';
+import { ShieldCheck, UploadCloud, Search, ShieldAlert, Brain } from 'lucide-react';
 import { ScoreGauge } from '../components/ScoreGauge';
 import { VulnerabilityCard } from '../components/VulnerabilityCard';
 import { CodeViewer } from '../components/CodeViewer';
 import { SuggestionPanel } from '../components/SuggestionPanel';
+import { showToast } from '../components/Toast';
 import { motion } from 'framer-motion';
 import SpotlightCard from '../components/SpotlightCard';
 
@@ -38,9 +39,9 @@ export const Scanner = () => {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail || 'Minting failed');
-      alert(`Certificate Minted Successfully!\nAsset ID: ${data.asset_id}\nTxn ID: ${data.txn_id}`);
+      showToast(`Certificate Minted Successfully! Asset ID: ${data.asset_id}`, 'success');
     } catch (e: any) {
-      alert(`Minting error: ${e.message}`);
+      showToast(`Minting error: ${e.message}`, 'error');
     } finally {
       setIsMinting(false);
     }
@@ -106,7 +107,7 @@ export const Scanner = () => {
       });
     } catch (error) {
       console.error('Scan error:', error);
-      alert('Failed to scan contract. Please try again.');
+      showToast('Failed to scan contract. Please try again.', 'error');
     } finally {
       setIsScanning(false);
     }
@@ -116,8 +117,8 @@ export const Scanner = () => {
     if (!scanResult) return;
     setLoadingSuggestions(true);
     setShowSuggestions(true);
+    setSuggestions(null);
     try {
-      // Use scan_id if available, otherwise re-send the file
       const formData = new FormData();
       if (scanResult.scan_id) {
         formData.append('scan_id', scanResult.scan_id);
@@ -126,7 +127,7 @@ export const Scanner = () => {
         formData.append('file', fileState);
         formData.append('wallet_address', walletAddress || 'anonymous');
       }
-      const res = await fetch('http://127.0.0.1:8000/suggest', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/suggest`, {
         method: 'POST',
         body: formData,
       });
@@ -149,8 +150,8 @@ export const Scanner = () => {
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
         {!scanResult ? (
           <div className="max-w-3xl mx-auto mt-10">
-            <div className="text-center mb-10">
-              <h1 className="text-4xl font-syne font-bold mb-4">Smart Contract Scanner</h1>
+            <div className="text-center mb-8 sm:mb-10">
+              <h1 className="text-2xl sm:text-4xl font-syne font-bold mb-4">Smart Contract Scanner</h1>
               <p className="text-gray-400">Upload your .teal source or provide an Algorand App ID.</p>
             </div>
 
@@ -172,36 +173,35 @@ export const Scanner = () => {
                 <div className="p-4 space-y-8">
                   {/* Drag & Drop Area */}
                   <div 
-                    className={`border-2 border-dashed rounded-xl p-10 flex flex-col items-center justify-center text-center transition-all ${dragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-gray-500'}`}
+                    className={`border-2 border-dashed rounded-xl p-8 sm:p-10 flex flex-col items-center justify-center text-center transition-all cursor-pointer ${dragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-gray-500'}`}
                     onDragEnter={handleDrag}
                     onDragLeave={handleDrag}
                     onDragOver={handleDrag}
                     onDrop={handleDrop}
+                    onClick={() => document.getElementById('file-upload-input')?.click()}
                   >
-                    <UploadCloud className={`w-16 h-16 ${dragActive ? 'text-primary' : 'text-gray-500'} mb-4`} />
-                    <h3 className="text-xl font-syne font-bold mb-2">Drag & Drop .TEAL file here</h3>
-                    <p className="text-gray-400 text-sm mb-4">Or click to browse from your computer.</p>
-                    <label className="btn-secondary cursor-pointer">
-                      Browse Files
-                      <input type="file" className="hidden" accept=".teal,.py,.txt" onChange={(e) => {
-                        if (e.target.files) {
-                          setFileState(e.target.files[0]);
-                          runScan(e.target.files[0]);
-                        }
-                      }} />
-                    </label>
+                    <UploadCloud className={`w-12 h-12 sm:w-16 sm:h-16 ${dragActive ? 'text-primary' : 'text-gray-500'} mb-4`} />
+                    <h3 className="text-lg sm:text-xl font-syne font-bold mb-2">Drag & Drop .TEAL file here</h3>
+                    <p className="text-gray-400 text-xs sm:text-sm mb-4">Or tap to browse from your device.</p>
+                    <input id="file-upload-input" type="file" className="hidden" accept=".teal,.py,.txt" onChange={(e) => {
+                      if (e.target.files) {
+                        setFileState(e.target.files[0]);
+                        runScan(e.target.files[0]);
+                      }
+                    }} />
+                    <span className="btn-secondary pointer-events-none">Browse Files</span>
                   </div>
 
-                  <div className="flex items-center gap-4">
-                    <div className="h-px bg-border flex-1" />
+                  <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <div className="h-px bg-border flex-1 hidden sm:block" />
                     <span className="text-gray-500 font-syne">OR</span>
-                    <div className="h-px bg-border flex-1" />
+                    <div className="h-px bg-border flex-1 hidden sm:block" />
                   </div>
 
                   {/* App ID Input */}
                   <div>
                     <label className="text-sm border-b-2 border-transparent font-mono text-gray-400 mb-2 block">Enter Algorand App ID:</label>
-                    <div className="flex gap-4">
+                    <div className="flex flex-col sm:flex-row gap-3">
                       <div className="relative flex-1">
                         <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                         <input 
@@ -212,7 +212,7 @@ export const Scanner = () => {
                           className="w-full bg-surface border border-border rounded-lg pl-10 pr-4 py-3 text-white focus:outline-none focus:border-primary transition-colors font-mono"
                         />
                       </div>
-                      <button onClick={runScan} disabled={!appId} className="btn-primary !py-3 whitespace-nowrap">
+                      <button onClick={() => runScan()} disabled={!appId} className="btn-primary !py-3 whitespace-nowrap">
                         Run Security Scan
                       </button>
                     </div>
@@ -223,13 +223,13 @@ export const Scanner = () => {
           </div>
         ) : (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-10 duration-700">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <h1 className="text-4xl font-syne font-bold mb-2">Scan Results</h1>
+                <h1 className="text-2xl sm:text-4xl font-syne font-bold mb-2">Scan Results</h1>
                 <p className="text-gray-400">Analysis complete. Review the findings below.</p>
               </div>
               
-              <button onClick={() => setScanResult(null)} className="btn-secondary">
+              <button onClick={() => { setScanResult(null); setSuggestions(null); setShowSuggestions(false); setLoadingSuggestions(false); }} className="btn-secondary w-full sm:w-auto">
                 Scan Another
               </button>
             </div>
@@ -254,8 +254,8 @@ export const Scanner = () => {
                     </div>
                   </div>
 
-                  <div className="mt-8">
-                    {scanResult.score > 70 ? (
+                  <div className="mt-8 space-y-3">
+                    {scanResult.score > 70 && (
                       <button 
                         onClick={handleMint}
                         disabled={isMinting}
@@ -263,9 +263,15 @@ export const Scanner = () => {
                       >
                         {isMinting ? "Minting NFT on Algorand..." : "Mint NFT Certificate"}
                       </button>
-                    ) : (
-                      <button onClick={handleGetSuggestions} className="w-full bg-surface border border-warning text-warning hover:bg-warning hover:text-black font-bold py-3 px-6 rounded-lg transition-all duration-300">🧠 Get AI Suggestions</button>
                     )}
+                    <button 
+                      onClick={handleGetSuggestions}
+                      disabled={loadingSuggestions}
+                      className="w-full flex items-center justify-center gap-2 bg-surface border border-warning/50 text-warning hover:bg-warning hover:text-black font-bold py-3 px-6 rounded-lg transition-all duration-300 disabled:opacity-50"
+                    >
+                      <Brain className="w-5 h-5" />
+                      {loadingSuggestions ? "Analyzing with AI..." : "Get AI Suggestions"}
+                    </button>
                   </div>
                 </SpotlightCard>
                 
@@ -281,32 +287,40 @@ export const Scanner = () => {
                       <VulnerabilityCard key={i} {...v} />
                     ))}
                   </motion.div>
-                  {showSuggestions && (
-                    <div style={{ marginTop: '1.5rem' }}>
-                      {loadingSuggestions && (
-                        <div style={{ color: '#64748b', padding: '1rem', textAlign: 'center' }}>
-                          ⟳ Analyzing with AI model...
-                        </div>
-                      )}
-                      {suggestions && !loadingSuggestions && (
-                        <SuggestionPanel 
-                          suggestions={suggestions.suggestions || []} 
-                          score={suggestions.security_score} 
-                          summary={suggestions.summary} 
-                        />
-                      )}
-                    </div>
-                  )}
                 </SpotlightCard>
               </div>
 
-              {/* Code Viewer */}
-              <div className="lg:col-span-8 flex flex-col">
-                <h3 className="text-white font-syne font-bold text-xl mb-4 pl-2">Contract Code</h3>
-                <CodeViewer 
-                  code={scanResult.contract_code} 
-                  highlights={scanResult.vulnerabilities.map((v: any) => v.line)} 
-                />
+              {/* Code Viewer & Suggestions */}
+              <div className="lg:col-span-8 flex flex-col space-y-6">
+                <div>
+                  <h3 className="text-white font-syne font-bold text-xl mb-4 pl-2">Contract Code</h3>
+                  <CodeViewer 
+                    code={scanResult.contract_code} 
+                    highlights={scanResult.vulnerabilities.map((v: any) => v.line)} 
+                  />
+                </div>
+
+                {showSuggestions && (
+                  <SpotlightCard spotlightColor="rgba(255, 170, 0, 0.15)">
+                    {loadingSuggestions ? (
+                      <div className="space-y-4 animate-pulse">
+                        <div className="h-8 bg-white/5 rounded-lg w-3/4" />
+                        <div className="h-16 bg-white/5 rounded-lg" />
+                        <div className="space-y-3">
+                          <div className="h-24 bg-white/5 rounded-lg" />
+                          <div className="h-24 bg-white/5 rounded-lg" />
+                          <div className="h-24 bg-white/5 rounded-lg" />
+                        </div>
+                      </div>
+                    ) : suggestions ? (
+                      <SuggestionPanel
+                        suggestions={suggestions.suggestions || []}
+                        score={suggestions.security_score}
+                        summary={suggestions.summary}
+                      />
+                    ) : null}
+                  </SpotlightCard>
+                )}
               </div>
             </div>
           </div>

@@ -8,16 +8,13 @@ import { ShieldAlert, Award, Activity } from 'lucide-react';
 import { useWallet } from '../context/WalletContext';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import LogoLoop from '../components/LogoLoop';
+import Footer from '../components/Footer';
+import FloatingWallets from '../components/FloatingWallets';
 
 export const Landing = () => {
   const { walletAddress, connectWallet } = useWallet();
   const navigate = useNavigate();
-
-  React.useEffect(() => {
-    if (walletAddress) {
-      navigate('/dashboard');
-    }
-  }, [walletAddress, navigate]);
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
@@ -25,6 +22,9 @@ export const Landing = () => {
       <div className="absolute inset-0 z-0">
         <Dither colorNum={4} pixelSize={2} waveColor={[0.0, 1.0, 0.53]} mouseRadius={1.5} />
       </div>
+
+      {/* Floating Wallets animation overlay */}
+      <FloatingWallets />
       
       <div className="absolute inset-0 z-[1] opacity-20 hidden md:block">
         <ASCIIText 
@@ -59,7 +59,11 @@ export const Landing = () => {
               transition={{ delay: 0.8, duration: 0.5 }}
               className="flex justify-center"
             >
-              {!walletAddress && (
+              {walletAddress ? (
+                <button onClick={() => navigate('/dashboard')} className="btn-primary text-lg !py-4 !px-8 border border-primary shadow-[0_0_30px_rgba(0,255,136,0.2)] hover:shadow-[0_0_50px_rgba(0,255,136,0.6)]">
+                  Go to Dashboard &gt;
+                </button>
+              ) : (
                 <button onClick={connectWallet} className="btn-primary text-lg !py-4 !px-8 border border-primary shadow-[0_0_30px_rgba(0,255,136,0.2)] hover:shadow-[0_0_50px_rgba(0,255,136,0.6)]">
                   Connect Pera Wallet to Begin
                 </button>
@@ -106,6 +110,12 @@ export const Landing = () => {
             </motion.div>
           </div>
         </main>
+
+        {/* Infinite Moving Logo Marquee */}
+        <LogoLoop />
+
+        {/* Premium Footer */}
+        <Footer />
       </div>
     </div>
   );

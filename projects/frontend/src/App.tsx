@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { WalletProvider, useWallet } from './context/WalletContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { Landing } from './pages/Landing';
 import { Dashboard } from './pages/Dashboard';
 import { Scanner } from './pages/Scanner';
@@ -19,22 +20,26 @@ const ProtectedRoute = () => {
 };
 
 function AppContent() {
+  const { theme } = useTheme();
+
   return (
-    <div style={{ position: 'relative', minHeight: '100vh', width: '100vw', backgroundColor: '#0a0a0a', color: '#fff', overflowX: 'hidden' }}>
+    <div style={{ position: 'relative', minHeight: '100vh', width: '100vw', backgroundColor: theme === 'light' ? '#f8fafc' : '#0a0a0a', color: theme === 'light' ? '#0f172a' : '#fff', overflowX: 'hidden' }}>
       
       {/* Global Dither Background Effect */}
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0, width: '100%', height: '100%', pointerEvents: 'auto', opacity: 0.9 }}>
-         <Dither 
-           waveColor={[0, 0.5, 0.15]} 
-           colorNum={4} 
-           disableAnimation={false} 
-           enableMouseInteraction={true} 
-           mouseRadius={0.4} 
-           waveAmplitude={0.3} 
-           waveFrequency={3} 
-           waveSpeed={0.05} 
-         />
-      </div>
+      {theme !== 'light' && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0, width: '100%', height: '100%', pointerEvents: 'auto', opacity: theme === 'black' ? 0.3 : 0.9 }}>
+           <Dither 
+             waveColor={theme === 'black' ? [0.1, 0.1, 0.1] : [0, 0.5, 0.15]} 
+             colorNum={4} 
+             disableAnimation={false} 
+             enableMouseInteraction={true} 
+             mouseRadius={0.4} 
+             waveAmplitude={0.3} 
+             waveFrequency={3} 
+             waveSpeed={0.05} 
+           />
+        </div>
+      )}
 
       {/* Foreground Content */}
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh', pointerEvents: 'none' }}>
@@ -63,9 +68,11 @@ function AppContent() {
 export default function App() {
   return (
     <WalletProvider>
-      <BrowserRouter>
-        <AppContent />
-      </BrowserRouter>
+      <ThemeProvider>
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
+      </ThemeProvider>
     </WalletProvider>
   );
 }
