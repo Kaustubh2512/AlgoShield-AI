@@ -9,13 +9,16 @@ interface FloatingWalletProps {
   y: string;
   scale: number;
   icon: React.ReactNode;
-  color: string;
+  bgGradient: string;
+  textColor: string;
+  glowColor: string;
+  label: string;
 }
 
-const WalletItem: React.FC<FloatingWalletProps> = ({ delay, duration, x, y, scale, icon, color }) => {
+const WalletItem: React.FC<FloatingWalletProps> = ({ delay, duration, x, y, scale, icon, bgGradient, textColor, glowColor, label }) => {
   return (
     <motion.div
-      className="absolute pointer-events-none opacity-75 filter blur-[0.2px]"
+      className="absolute pointer-events-none opacity-85 filter blur-[0.1px]"
       style={{ top: y, left: x, scale }}
       initial={{ y: 0, x: 0 }}
       animate={{
@@ -31,19 +34,15 @@ const WalletItem: React.FC<FloatingWalletProps> = ({ delay, duration, x, y, scal
       }}
     >
       <div 
-        className="flex items-center gap-3 p-3 rounded-xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-sm"
+        className={`flex items-center gap-2 p-2 rounded-lg border border-white/20 ${bgGradient} ${textColor} shadow-lg`}
         style={{
-          boxShadow: `0 0 20px ${color}`,
-          borderColor: color,
+          boxShadow: `0 0 15px ${glowColor}`,
         }}
       >
-        <div className="p-2 rounded-lg bg-white/5 text-white">
+        <div className="p-1 rounded-md bg-white/20">
           {icon}
         </div>
-        <div className="flex flex-col gap-0.5">
-          <div className="w-10 h-1.5 rounded bg-white/20" />
-          <div className="w-6 h-1 rounded bg-white/10" />
-        </div>
+        <span className="font-mono text-[9px] font-bold tracking-widest uppercase opacity-90">{label}</span>
       </div>
     </motion.div>
   );
@@ -51,11 +50,66 @@ const WalletItem: React.FC<FloatingWalletProps> = ({ delay, duration, x, y, scal
 
 export const FloatingWallets: React.FC = () => {
   const wallets = [
-    { delay: 0, duration: 18, x: '10%', y: '25%', scale: 0.85, icon: <Wallet className="w-5 h-5 text-primary" />, color: 'rgba(0, 255, 136, 0.3)' },
-    { delay: 3, duration: 22, x: '82%', y: '15%', scale: 0.9, icon: <CreditCard className="w-5 h-5 text-secondary" />, color: 'rgba(0, 212, 255, 0.3)' },
-    { delay: 1.5, duration: 20, x: '75%', y: '65%', scale: 0.75, icon: <Coins className="w-5 h-5 text-amber-500" />, color: 'rgba(255, 170, 0, 0.3)' },
-    { delay: 4, duration: 24, x: '15%', y: '70%', scale: 0.8, icon: <Key className="w-5 h-5 text-pink-400" />, color: 'rgba(236, 72, 153, 0.3)' },
-    { delay: 2.5, duration: 19, x: '45%', y: '80%', scale: 0.7, icon: <Shield className="w-5 h-5 text-emerald-400" />, color: 'rgba(52, 211, 153, 0.25)' },
+    { 
+      delay: 0, 
+      duration: 18, 
+      x: '8%', 
+      y: '22%', 
+      scale: 0.55, 
+      icon: <Wallet className="w-3.5 h-3.5" />, 
+      bgGradient: 'bg-gradient-to-br from-emerald-400 to-teal-600', 
+      textColor: 'text-black', 
+      glowColor: 'rgba(52, 211, 153, 0.4)',
+      label: 'SECURE'
+    },
+    { 
+      delay: 3, 
+      duration: 22, 
+      x: '84%', 
+      y: '14%', 
+      scale: 0.58, 
+      icon: <CreditCard className="w-3.5 h-3.5" />, 
+      bgGradient: 'bg-gradient-to-br from-cyan-400 to-blue-600', 
+      textColor: 'text-white', 
+      glowColor: 'rgba(56, 189, 248, 0.4)',
+      label: 'PERA' 
+    },
+    { 
+      delay: 1.5, 
+      duration: 20, 
+      x: '88%', 
+      y: '68%', 
+      scale: 0.52, 
+      icon: <Coins className="w-3.5 h-3.5" />, 
+      bgGradient: 'bg-gradient-to-br from-amber-300 to-orange-500', 
+      textColor: 'text-black', 
+      glowColor: 'rgba(251, 191, 36, 0.4)',
+      label: 'ALGO' 
+    },
+    { 
+      delay: 4, 
+      duration: 24, 
+      x: '12%', 
+      y: '72%', 
+      scale: 0.55, 
+      icon: <Key className="w-3.5 h-3.5" />, 
+      bgGradient: 'bg-gradient-to-br from-pink-400 to-rose-600', 
+      textColor: 'text-white', 
+      glowColor: 'rgba(251, 113, 133, 0.4)',
+      label: 'KEYS' 
+    },
+    { 
+      delay: 2.5, 
+      duration: 19, 
+      x: '46%', 
+      y: '82%', 
+      scale: 0.5, 
+      icon: <Shield className="w-3.5 h-3.5" />, 
+      bgGradient: 'bg-gradient-to-br from-fuchsia-400 to-purple-600', 
+      textColor: 'text-white', 
+      glowColor: 'rgba(217, 70, 239, 0.35)',
+      label: 'SHIELD' 
+    },
   ];
 
   return (
