@@ -1,4 +1,4 @@
-#🛡️ AlgoShield AI — Next-Gen Smart Contract Security on Algorand
+# 🛡️ AlgoShield AI — Next-Gen Smart Contract Security on Algorand
 
 ![AlgoShield Banner](https://img.shields.io/badge/Algorand-3.0_Hackathon-blue?style=for-the-badge&logo=algorand)
 ![AI-Powered](https://img.shields.io/badge/AI--Powered-Security-00ff88?style=for-the-badge)
@@ -16,27 +16,57 @@ Turn security from a bottleneck into your competitive advantage.
 
 ---
 
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    FRONTEND (React + Vite)                   │
+│  Landing │ Dashboard │ Scanner │ Certificates │ Monitor      │
+│  Pera Wallet Connect │ Tailwind CSS │ TypeScript             │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ HTTP
+┌──────────────────────────▼──────────────────────────────────┐
+│                    BACKEND (FastAPI)                          │
+│                                                              │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────────────┐  │
+│  │ AI Scanner   │  │ NFT Minting  │  │ 24hr Monitoring   │  │
+│  │ ML Model     │  │ ARC-69 Certs │  │ Anomaly Detection │  │
+│  │ RAG/SLM      │  │ Pera Wallet  │  │ Email + Telegram  │  │
+│  │ Rules Engine │  │              │  │ Alerts            │  │
+│  └──────┬───────┘  └──────┬───────┘  └───────┬───────────┘  │
+│         │                 │                   │              │
+│    MongoDB           Algorand            Supabase            │
+│  (Scans, Certs)      Testnet         (Monitoring DB)         │
+└─────────────────────────────────────────────────────────────┘
+                           │
+┌──────────────────────────▼──────────────────────────────────┐
+│                 SDK (npm: @kaustubh2512/algoshield)           │
+│           scan() │ scanFile() │ watch() │ CLI                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## ✨ Key Features & Use Cases
 
 ### 1. 📟 AI Security Scanner & Suggestion Engine (RAG)
-Upload your `.teal` file or provide an Algorand App ID to get an instant vulnerability report. 
+Upload your `.teal`, `.py`, or `.txt` file or provide an Algorand App ID to get an instant vulnerability report. 
 - **Hybrid Intelligence:** Uses a Random Forest ML model alongside a strict rule-based engine to classify contract risk.
 - **AI Fix Suggestions:** Powered by a local Phi-3-mini SLM and ChromaDB Vectorstore. It provides highly accurate, line-by-line fix recommendations based on a curated Algorand security knowledge base.
 
 ### 2. 📡 24/7 Live On-Chain Monitoring
 Never take your eyes off your deployed contracts.
-- **Anomaly Detection:** Continuously polls the Algorand Indexer for new transactions and feeds them into an Isolation Forest ML model to detect anomalous activities (e.g., Reentrancy, balance drains).
-- **Email Alerts:** Automatically dispatches rich HTML email alerts to developers the moment a critical risk is flagged on-chain.
+- **Dual AI Detection:** Continuously polls the Algorand Indexer and runs BOTH an Isolation Forest anomaly model and a Random Forest classification model.
+- **Multi-Channel Alerts:** Automatically dispatches rich HTML email alerts and Telegram notifications the moment a critical risk is flagged on-chain.
 
 ### 3. 💎 Interactive Security Dashboard
 A premium, dark-themed command center for developers.
 - **Live Terminal-Style Scanning:** Visual, modern UI to read security reports.
-- **NFT Certificate Minting:** If a contract scores ≥ 70, you can officially mint an ARC-69 NFT Security Certificate directly to your Pera Wallet on the Algorand blockchain.
-- **Monitoring Hub:** View live transaction feeds and configure alert settings.
+- **NFT Certificate Minting:** If a contract scores ≥ 70, officially mint an ARC-69 NFT Security Certificate directly to your Pera Wallet on the Algorand testnet.
 
 ### 4. 🛡️ Developer SDK & CLI
 Bring AlgoShield directly into your terminal or CI/CD pipeline.
-- Automatically scan files locally and watch for changes while you develop.
+- Automatically scan files locally and watch for changes while you develop. Supports custom pass/fail score thresholds and machine-readable JSON outputs.
 
 ---
 
@@ -45,7 +75,7 @@ Bring AlgoShield directly into your terminal or CI/CD pipeline.
 ### Tech Stack
 - **Blockchain**: Algorand SDK (`py-algorand-sdk`), ARC-69 NFT Standard, Algonode Indexer
 - **AI/ML**: Python, Scikit-learn (Random Forest, Isolation Forest), `llama-cpp-python` (Phi-3-mini), ChromaDB
-- **Backend**: FastAPI, Motor (Async MongoDB), APScheduler, Python `smtplib`
+- **Backend**: FastAPI, Motor (Async MongoDB), Supabase, APScheduler, Python `smtplib`
 - **Frontend**: React (Vite), Tailwind CSS, Framer Motion, Pera Connect
 - **SDK**: Node.js, Chokidar, Axios
 
@@ -59,6 +89,7 @@ Follow these steps to run the complete AlgoShield AI platform on your local mach
 - **Python 3.9+**
 - **Node.js 18+**
 - **MongoDB** (running locally on port `27017` or via MongoDB Atlas)
+- **Supabase** Project (for 24/7 Monitoring)
 - **C/C++ Build Tools** (Required for installing `llama-cpp-python` and `chromadb` on some OS)
 
 ### 1. Clone the Repository
@@ -71,23 +102,31 @@ cd AlgoShield_AI/projects
 Navigate to the `projects/backend` directory and create a `.env` file:
 ```bash
 cd backend
-touch .env
+cp .env.template .env
 ```
 Populate the `.env` file with the following variables:
 ```env
-# MongoDB Connection
+# MongoDB (Main DB - scans, certificates)
 MONGODB_URL=mongodb://localhost:27017
 MONGODB_DB_NAME=algoshield
 
-# SMTP Email Alerting (Use Gmail App Password)
+# Supabase (Monitoring DB - 24hr monitoring)
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_KEY=your_service_role_key
+
+# Algorand (Blockchain)
+PLATFORM_MNEMONIC=your 25 word mnemonic
+INDEXER_API_URL=https://mainnet-idx.algonode.cloud
+
+# SMTP Email Alerts
 SMTP_USER=your-email@gmail.com
 SMTP_PASSWORD=your_app_password
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=465
 ALERT_FROM_EMAIL=AlgoShield AI <your-email@gmail.com>
 
-# Algorand Indexer (Optional - defaults to algonode)
-INDEXER_API_URL=https://mainnet-idx.algonode.cloud
+# Telegram Alerts
+TELEGRAM_BOT_TOKEN=your_bot_token
 ```
 
 ### 3. Start the Backend API
@@ -98,8 +137,6 @@ python -m venv venv
 
 # Activate venv (Windows)
 venv\Scripts\activate
-# Activate venv (Mac/Linux)
-source venv/bin/activate
 
 pip install -r requirements.txt
 
@@ -117,7 +154,7 @@ npm run dev
 ```
 Visit `http://localhost:5173` in your browser.
 
-### 5. Run the CLI SDK (Optional)
+### 5. Run the CLI SDK
 To test contracts directly from your terminal:
 ```bash
 cd projects/algoshield-sdk
@@ -127,7 +164,24 @@ node bin/algoshield.js scan ./my-contract.teal
 
 ---
 
-## 🤝 Team
-Developed with ❤️ by **TEAM QANTAS** for the **Algorand 3.0 Hack Series 🐍**.
+## 🎬 Demo Flow Instructions
 
-*Securing the decentralized future, one block at a time.*
+1. **Connect Wallet:** Click "Connect Wallet" and pair your Pera Wallet (Testnet).
+2. **Scan Contract:** Go to the Dashboard and click "Scan a Contract". Upload a vulnerable `.teal` file (e.g., from `dataset/contracts/risky/`).
+3. **View AI Fixes:** Once the scan completes, click **🧠 Get AI Suggestions** to load the AI-generated fixes via SLM.
+4. **Mint Certificate:** Upload a safe contract (score >= 70). Click "Mint NFT Certificate" and approve the transaction in Pera Wallet.
+5. **Start Monitoring:** Go to the "Monitor" tab. Enter an App ID, Account Address, and Email. Click "Start Monitoring" to register it in Supabase.
+6. **Trigger Alert:** Use a test script to send a risky transaction to the monitored App ID. You should see the alert appear in the live feed and receive an Email/Telegram notification.
+
+---
+
+## 🤝 Team QANTAS
+
+Developed with ❤️ for the **Algorand 3.0 Hack Series 🐍**.
+
+- **Member 1**: Frontend Developer (React, Tailwind, Pera Wallet Integration)
+- **Member 2 (Kedar)**: AI/ML Developer (Scikit-learn models, SLM RAG pipeline, Supabase)
+- **Member 3**: Blockchain + SDK Developer (npm SDK, ARC-69 Minting, Notification Channels)
+- **Member 4**: Backend Lead (FastAPI, MongoDB, Project Coordinator)
+
+*Securing the decentralized future, one block at a time.* 🛡️

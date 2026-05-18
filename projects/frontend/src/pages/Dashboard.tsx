@@ -16,7 +16,7 @@ export const Dashboard = () => {
     if (walletAddress) {
       fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/scans/${walletAddress}`)
         .then(res => res.json())
-        .then(data => setRecentScans(data.slice(0, 6)))
+        .then(data => setRecentScans(data.slice(0, 3)))
         .catch(err => console.error(err));
     } else {
       navigate('/');

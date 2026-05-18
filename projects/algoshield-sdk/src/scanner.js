@@ -26,7 +26,7 @@ async function scanContract(contractCode, options = {}) {
 
 async function scanFile(filePath, options = {}) {
   if (!fs.existsSync(filePath)) throw new Error(`File not found: ${filePath}`);
-  if (!['.teal'].includes(path.extname(filePath).toLowerCase())) throw new Error('Only .teal files supported');
+  if (!['.teal', '.py', '.txt'].includes(path.extname(filePath).toLowerCase())) throw new Error('Only .teal, .py, and .txt files supported');
   return scanContract(fs.readFileSync(filePath, 'utf-8'), options);
 }
 

@@ -1,7 +1,6 @@
 # services/monitor_service.py
 import os
-import uuid
-import requests
+import asyncio
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 try:
@@ -10,19 +9,12 @@ try:
     from utils.telegram_service import send_telegram_alert
     from ml_models.anomaly import get_monitor
     from utils.ai_analyzer import analyze_transaction
+    from utils.supabase_client import get_supabase_client
 except ImportError:
     pass
-from pymongo import MongoClient
 from dotenv import load_dotenv
 
 load_dotenv()
-
-MONGODB_URL    = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
-MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME", "algoshield")
-
-# Use sync PyMongo here (not Motor) because APScheduler runs in a thread, not async
-_sync_client = MongoClient(MONGODB_URL)
-_sync_db     = _sync_client[MONGODB_DB_NAME]
 
 scheduler = BackgroundScheduler()
 
@@ -50,8 +42,6 @@ def run_monitoring_cycle():
     runs BOTH anomaly detection (Isolation Forest) AND AI classification (Random Forest),
     saves alerts, sends Email + Telegram messages.
     """
-
-    # APScheduler runs in a separate thread. We must run async code using asyncio
     import asyncio
     try:
         loop = asyncio.get_event_loop()
@@ -59,13 +49,16 @@ def run_monitoring_cycle():
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-    monitor_jobs = _sync_db["monitor_jobs"]
-    alerts       = _sync_db["alerts"]
+    supabase = get_supabase_client()
 
-    active_jobs = list(monitor_jobs.find({"is_active": True}))
+    response = supabase.table("monitored_contracts").select("*").eq("is_active", True).execute()
+    active_jobs = response.data
+
+    if not active_jobs:
+        return
 
     for job in active_jobs:
-        job_id = job["_id"]
+        job_id = job["id"]
 
         try:
             # 1. Fetch new transactions from Algorand Indexer
@@ -78,16 +71,15 @@ def run_monitoring_cycle():
                 continue
 
             # 2. Update the last seen round based on highest confirmed-round in new txns
-            highest_round = job.get("last_round", 0)
+            highest_round = job.get("last_round", 0) or 0
             for txn in new_txns:
                 rnd = txn.get("confirmed-round", 0)
                 if rnd > highest_round:
                     highest_round = rnd
 
-            monitor_jobs.update_one(
-                {"_id": job_id},
-                {"$set": {"last_round": highest_round + 1}}
-            )
+            supabase.table("monitored_contracts").update(
+                {"last_round": highest_round + 1}
+            ).eq("id", job_id).execute()
 
             # 3. Get the Isolation Forest anomaly detector
             ai_monitor = get_monitor(str(job["app_id"]))
@@ -112,7 +104,6 @@ def run_monitoring_cycle():
                         combined_severity = ai_result.get("risk_level", "MEDIUM")
 
                     alert_doc = {
-                        "_id":            str(uuid.uuid4()),
                         "monitor_job_id": job_id,
                         "app_id":         job["app_id"],
                         "txn_id":         txn.get("id"),
@@ -120,11 +111,10 @@ def run_monitoring_cycle():
                         "ai_label":       ai_result.get("label", "UNKNOWN"),
                         "ai_risk_level":  ai_result.get("risk_level", "UNKNOWN"),
                         "severity":       combined_severity,
-                        "description":    anomaly_result.get("description", ai_result.get("error", "Unknown")),
-                        "is_read":        False,
-                        "created_at":     datetime.utcnow()
+                        "description":    anomaly_result.get("description") or ai_result.get("error", "Unknown"),
+                        "is_read":        False
                     }
-                    alerts.insert_one(alert_doc)
+                    supabase.table("alerts").insert(alert_doc).execute()
 
                     print(f"🚨 Alert — App {job['app_id']} | {combined_severity} | {alert_doc['description']}")
 
@@ -161,4 +151,3 @@ def run_monitoring_cycle():
 
         except Exception as e:
             print(f"Error in monitor job {job_id}: {e}")
-
