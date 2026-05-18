@@ -29,7 +29,7 @@ export const WalletProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }).catch(console.error);
 
     return () => {
-      peraWallet.connector?.off('disconnect', disconnectWallet);
+      peraWallet.connector?.off('disconnect');
     };
   }, []);
 

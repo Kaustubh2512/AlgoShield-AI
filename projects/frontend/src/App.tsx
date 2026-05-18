@@ -6,7 +6,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Scanner } from './pages/Scanner';
 import { Certificates } from './pages/Certificates';
 import { Monitor } from './pages/Monitor';
-import Dither from './components/Dither';
+import Threads from './components/Threads';
 import './styles/main.css';
 
 const ProtectedRoute = () => {
@@ -20,19 +20,15 @@ const ProtectedRoute = () => {
 
 function AppContent() {
   return (
-    <div style={{ position: 'relative', minHeight: '100vh', width: '100vw', backgroundColor: '#0a0a0a', color: '#fff', overflowX: 'hidden' }}>
+    <div style={{ position: 'relative', minHeight: '100vh', width: '100vw', backgroundColor: '#0F172A', color: '#fff', overflowX: 'hidden' }}>
       
-      {/* Global Dither Background Effect */}
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0, width: '100%', height: '100%', pointerEvents: 'auto', opacity: 0.9 }}>
-         <Dither 
-           waveColor={[0, 0.5, 0.15]} 
-           colorNum={4} 
-           disableAnimation={false} 
-           enableMouseInteraction={true} 
-           mouseRadius={0.4} 
-           waveAmplitude={0.3} 
-           waveFrequency={3} 
-           waveSpeed={0.05} 
+      {/* Global Threads Background Effect */}
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0, width: '100%', height: '100%', pointerEvents: 'auto', opacity: 0.85 }}>
+         <Threads 
+           amplitude={1.1}
+           distance={18}
+           enableMouseInteraction={true}
+           speed={0.9}
          />
       </div>
 

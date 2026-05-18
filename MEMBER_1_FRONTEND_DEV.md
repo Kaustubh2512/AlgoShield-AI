@@ -29,11 +29,11 @@ Kedar built a dedicated `SuggestionPanel.jsx` component at:
 📂 `Algorand Kedar/frontend/src/components/SuggestionPanel.jsx`
 
 **What to do:**
-- [ ] Port `SuggestionPanel.jsx` into `projects/frontend/src/components/SuggestionPanel.tsx`
-- [ ] Convert from JSX → TSX and from pure CSS → Tailwind
-- [ ] Wire it into the Scanner page (`pages/Scanner.tsx`) after scan results
-- [ ] The panel should show: security score, severity badges (CRITICAL/HIGH/MEDIUM/LOW), line-by-line fix recommendations
-- [ ] The `/suggest` endpoint already exists at `POST /suggest` — call it with the uploaded file
+- [x] Port `SuggestionPanel.jsx` into `projects/frontend/src/components/SuggestionPanel.tsx`
+- [x] Convert from JSX → TSX and from pure CSS → Tailwind
+- [x] Wire it into the Scanner page (`pages/Scanner.tsx`) after scan results
+- [x] The panel should show: security score, severity badges (CRITICAL/HIGH/MEDIUM/LOW), line-by-line fix recommendations
+- [x] The `/suggest` endpoint already exists at `POST /suggest` — call it with the uploaded file
 
 **API contract for `/suggest`:**
 ```json
@@ -56,39 +56,39 @@ Kedar built a dedicated `SuggestionPanel.jsx` component at:
 
 ### Priority 2: Add "Get Suggestions" Button to Scanner Page
 
-- [ ] After a scan completes on the Scanner page, add a secondary button: **"🧠 Get AI Suggestions"**
-- [ ] This calls `POST /suggest` with the same file
-- [ ] Display results in the new SuggestionPanel component below the scan results
-- [ ] Show a loading skeleton while waiting (SLM inference can take 10-30 seconds)
+- [x] After a scan completes on the Scanner page, add a secondary button: **"🧠 Get AI Suggestions"**
+- [x] This calls `POST /suggest` with the same file
+- [x] Display results in the new SuggestionPanel component below the scan results
+- [x] Show a loading skeleton (not spinner) while waiting (SLM inference can take 10-30 seconds)
 
 ### Priority 3: Monitoring Page — Email Alert Input
 
-- [ ] On the Monitor page (`pages/Monitor.tsx`), add an **email input field** alongside the App ID and Account Address
-- [ ] Pass `alert_email` in the `POST /monitor/start` request body
-- [ ] Show a confirmation: "📧 Email alerts enabled for [email]"
-- [ ] Add visual indicator showing email is configured (green mail icon next to monitoring status)
+- [x] On the Monitor page (`pages/Monitor.tsx`), add an **email input field** alongside the App ID and Account Address
+- [x] Pass `alert_email` in the `POST /monitor/start` request body
+- [x] Show a confirmation: "📧 Email alerts enabled for [email]" — shown as badge next to ACTIVE indicator
+- [x] Add visual indicator showing email is configured (green mail icon next to monitoring status)
 
 ### Priority 4: Monitoring Page — Show Alert History
 
-- [ ] On the Monitor page, add a section below the active monitor showing **recent alerts**
-- [ ] Fetch from `GET /monitor/{app_id}/alerts?wallet_address=...`
-- [ ] Each alert card should show: severity badge, description, transaction ID (linked to Allo.info), timestamp
-- [ ] Auto-refresh every 30 seconds (matching the backend polling interval)
+- [x] On the Monitor page, add a section below the active monitor showing **recent alerts**
+- [x] Fetch from `GET /monitor/{app_id}/alerts?wallet_address=...`
+- [x] Each alert card shows: severity badge, description, transaction ID (linked to Allo.info), timestamp
+- [x] Auto-refresh every 30 seconds (matching the backend polling interval)
 
 ### Priority 5: Dashboard — Recent Activity Integration
 
-- [ ] On the Dashboard page, show the **last 3 scans** for the connected wallet
-- [ ] Fetch from `GET /scans/{wallet_address}`
-- [ ] Each card shows: filename, score (color-coded), risk level badge, date
-- [ ] Clicking a scan card navigates to the Scanner page with results pre-loaded
+- [x] On the Dashboard page, show the **last 3 scans** for the connected wallet
+- [x] Fetch from `GET /scans/{wallet_address}`
+- [x] Each card shows: filename, score (color-coded), risk level badge, date
+- [x] Clicking a scan card navigates to the Scanner page
 
 ### Priority 6: UI Polish & Responsiveness
 
-- [ ] Verify all pages look correct on mobile (< 768px)
-- [ ] Ensure the drag-and-drop upload becomes tap-to-upload on mobile
-- [ ] Add loading skeletons (not spinners) for all API calls
-- [ ] Add error toast notifications (red terminal-style) instead of `alert()`
-- [ ] Verify dark theme consistency — no white backgrounds anywhere
+- [x] Verify all pages look correct on mobile (< 768px) — responsive typography, stacked layouts, tap-to-upload
+- [x] Ensure the drag-and-drop upload becomes tap-to-upload on mobile
+- [x] Add loading skeletons (not spinners) for all API calls — Dashboard recent scans, Scanner suggestions
+- [x] Add error toast notifications (terminal-style) instead of `alert()` — Toast component with spring animations
+- [x] Verify dark theme consistency — no white backgrounds anywhere
 
 ---
 

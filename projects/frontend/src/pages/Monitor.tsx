@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Navbar } from '../components/Navbar';
 import { useWallet } from '../context/WalletContext';
 import { useNavigate } from 'react-router-dom';
-import { Activity, Shield, Hash, ShieldAlert, Mail } from 'lucide-react';
+import { Activity, Shield, Hash, ShieldAlert, Mail, CheckCircle, ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { AlertBanner } from '../components/AlertBanner';
+import { showToast } from '../components/Toast';
 import SpotlightCard from '../components/SpotlightCard';
 
 export const Monitor = () => {
@@ -18,6 +19,7 @@ export const Monitor = () => {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [showAlertBanner, setShowAlertBanner] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
+  const [emailConfirmed, setEmailConfirmed] = useState(false);
 
   useEffect(() => {
     if (!walletAddress) {
@@ -45,13 +47,15 @@ export const Monitor = () => {
       setJobId(data.job_id);
       setIsMonitoring(true);
       setAlerts([]);
+      setEmailConfirmed(!!alertEmail);
     } catch (e: any) {
-      alert(`Failed to start monitoring: ${e.message}`);
+      showToast(`Failed to start monitoring: ${e.message}`, 'error');
     }
   };
 
   const stopMonitoring = async () => {
     setIsMonitoring(false);
+    setEmailConfirmed(false);
     if (jobId) {
       try {
         await fetch(`http://127.0.0.1:8000/monitor/stop/${jobId}`, {
@@ -74,7 +78,9 @@ export const Monitor = () => {
               timestamp: new Date(a.timestamp).toLocaleTimeString(),
               type: a.severity + ' Alert',
               description: a.description,
-              severity: a.severity
+              severity: a.severity,
+              txn_id: a.txn_id || a.transaction_id || null,
+              id: a.id || a.alert_id
             })));
             setShowAlertBanner(true);
             setTimeout(() => setShowAlertBanner(false), 5000);
@@ -82,7 +88,7 @@ export const Monitor = () => {
         } catch (e) {
           console.error('Poll error', e);
         }
-      }, 10000);
+      }, 30000);
     }
     return () => clearInterval(interval);
   }, [isMonitoring, appId, walletAddress]);
@@ -99,15 +105,21 @@ export const Monitor = () => {
       />
 
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
-        <div className="mb-12 flex justify-between items-end">
+        <div className="mb-8 sm:mb-12">
           <div>
-            <h1 className="text-4xl font-syne font-bold mb-2 flex items-center gap-4">
+            <h1 className="text-2xl sm:text-4xl font-syne font-bold mb-2 flex flex-wrap items-center gap-3">
               Live Monitoring
               {isMonitoring && (
                  <span className="flex items-center gap-2 text-sm bg-safe/10 border border-safe text-safe px-3 py-1 rounded-full animate-pulse shadow-[0_0_10px_rgba(0,255,136,0.5)]">
                    <span className="w-2 h-2 rounded-full bg-safe"></span>
                    ACTIVE
                  </span>
+              )}
+              {isMonitoring && emailConfirmed && (
+                <span className="flex items-center gap-1 text-xs bg-secondary/10 border border-secondary/50 text-secondary px-2 py-1 rounded-full">
+                  <CheckCircle className="w-3 h-3" />
+                  {alertEmail}
+                </span>
               )}
             </h1>
             <p className="text-gray-400">Set up 24/7 AI-powered anomaly detection for live smart contracts.</p>
@@ -224,27 +236,57 @@ export const Monitor = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {alerts.map((alert, idx) => (
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-mono text-gray-400">Recent Alerts ({alerts.length})</h4>
+                    <span className="text-xs font-mono text-gray-500">Auto-refresh: 30s</span>
+                  </div>
+                  {alerts.map((alert, idx) => {
+                    const severityConfig = {
+                      Critical: { bg: 'bg-danger/10', border: 'border-danger/50', text: 'text-danger', badge: 'bg-danger/20' },
+                      High: { bg: 'bg-danger/10', border: 'border-danger/50', text: 'text-danger', badge: 'bg-danger/20' },
+                      Risky: { bg: 'bg-warning/10', border: 'border-warning/50', text: 'text-warning', badge: 'bg-warning/20' },
+                      Medium: { bg: 'bg-warning/10', border: 'border-warning/50', text: 'text-warning', badge: 'bg-warning/20' },
+                      Low: { bg: 'bg-secondary/10', border: 'border-secondary/50', text: 'text-secondary', badge: 'bg-secondary/20' },
+                    };
+                    const config = severityConfig[alert.severity as keyof typeof severityConfig] || severityConfig.Low;
+
+                    return (
                       <motion.div 
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        key={idx}
-                        className={`p-4 rounded-lg border flex gap-4
-                          ${alert.severity === 'Critical' ? 'bg-danger/10 border-danger/50 text-danger' : 
-                            alert.severity === 'Risky' ? 'bg-warning/10 border-warning/50 text-warning' : 
-                            'bg-surface border-border text-gray-300'}`}
+                        key={alert.id || idx}
+                        className={`p-4 rounded-xl border ${config.bg} ${config.border}`}
                       >
-                        <ShieldAlert className="w-6 h-6 shrink-0 mt-1" />
-                        <div>
-                          <div className="flex justify-between items-start mb-1">
-                            <h4 className="font-syne font-bold text-lg">{alert.type}</h4>
-                            <span className="font-mono text-xs opacity-70">{alert.timestamp}</span>
+                        <div className="flex items-start gap-3">
+                          <ShieldAlert className={`w-5 h-5 shrink-0 mt-0.5 ${config.text}`} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-bold font-mono ${config.badge} ${config.text}`}>
+                                {alert.severity.toUpperCase()}
+                              </span>
+                              <span className="font-syne font-bold text-white text-sm">{alert.type}</span>
+                            </div>
+                            <p className="text-sm text-gray-300 mb-2">{alert.description}</p>
+                            <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-gray-500">
+                              <span>{alert.timestamp}</span>
+                              {alert.txn_id && (
+                                <a
+                                  href={`https://allo.info/tx/${alert.txn_id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 text-secondary hover:text-white transition-colors"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                  View Transaction
+                                </a>
+                              )}
+                            </div>
                           </div>
-                          <p className="text-sm opacity-90">{alert.description}</p>
                         </div>
                       </motion.div>
-                    ))}
-                  </div>
+                    );
+                  })}
+                </div>
                 )}
               </div>
             </SpotlightCard>

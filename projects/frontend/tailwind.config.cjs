@@ -5,17 +5,17 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: '#0a0a0a',
-        'dark-green': '#0d1f0d',
-        primary: '#00ff88',
-        secondary: '#00d4ff',
-        danger: '#ff3333',
-        warning: '#ffaa00',
-        safe: '#00ff88',
-        surface: 'rgba(255, 255, 255, 0.05)',
-        'surface-hover': 'rgba(255, 255, 255, 0.1)',
-        border: 'rgba(255, 255, 255, 0.1)',
-        'border-glow': 'rgba(0, 255, 136, 0.5)',
+        background: '#0F172A',
+        'dark-green': '#1E1B4B',
+        primary: '#F59E0B',
+        secondary: '#8B5CF6',
+        danger: '#EF4444',
+        warning: '#F59E0B',
+        safe: '#10B981',
+        surface: 'rgba(30, 41, 59, 0.5)',
+        'surface-hover': 'rgba(30, 41, 59, 0.8)',
+        border: 'rgba(255, 255, 255, 0.08)',
+        'border-glow': 'rgba(139, 92, 246, 0.4)',
       },
       fontFamily: {
         syne: ['Syne', 'sans-serif'],
@@ -38,16 +38,16 @@ module.exports = {
           '100%': { transform: 'rotate(360deg)' },
         },
         livePulse: {
-          '0%, 100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(0,255,136,0.5)' },
-          '50%': { transform: 'scale(1.2)', boxShadow: '0 0 0 6px rgba(0,255,136,0)' },
+          '0%, 100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(16,185,129,0.5)' },
+          '50%': { transform: 'scale(1.2)', boxShadow: '0 0 0 6px rgba(16,185,129,0)' },
         },
         shimmer: {
           '0%': { transform: 'translateX(-100%)' },
           '100%': { transform: 'translateX(100%)' },
         },
         pulseGlow: {
-          '0%, 100%': { opacity: 1, textShadow: '0 0 10px rgba(0,255,136,0.5)' },
-          '50%': { opacity: 0.7, textShadow: '0 0 20px rgba(0,255,136,0.8)' },
+          '0%, 100%': { opacity: 1, textShadow: '0 0 10px rgba(245,158,11,0.5)' },
+          '50%': { opacity: 0.7, textShadow: '0 0 20px rgba(245,158,11,0.8)' },
         }
       },
     },

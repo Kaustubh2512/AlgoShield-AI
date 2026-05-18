@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Navbar } from '../components/Navbar';
 import { useWallet } from '../context/WalletContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { Search, Award, Activity, History, ArrowRight } from 'lucide-react';
+import { Search, Award, Activity, History, ArrowRight, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 import SpotlightCard from '../components/SpotlightCard';
 
@@ -11,13 +11,21 @@ export const Dashboard = () => {
   const navigate = useNavigate();
 
   const [recentScans, setRecentScans] = useState<any[]>([]);
+  const [loadingScans, setLoadingScans] = useState(true);
 
   useEffect(() => {
     if (walletAddress) {
+      setLoadingScans(true);
       fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/scans/${walletAddress}`)
         .then(res => res.json())
-        .then(data => setRecentScans(data.slice(0, 6)))
-        .catch(err => console.error(err));
+        .then(data => {
+          setRecentScans(data.slice(0, 3));
+          setLoadingScans(false);
+        })
+        .catch(err => {
+          console.error(err);
+          setLoadingScans(false);
+        });
     } else {
       navigate('/');
     }
@@ -35,7 +43,7 @@ export const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-12"
         >
-          <h1 className="text-4xl font-syne font-bold mb-2">Welcome Back, <span className="text-secondary font-mono text-3xl">{walletAddress.slice(0, 8)}...</span></h1>
+          <h1 className="text-2xl sm:text-4xl font-syne font-bold mb-2">Welcome Back, <span className="text-secondary font-mono text-xl sm:text-3xl">{walletAddress.slice(0, 8)}...</span></h1>
           <p className="text-gray-400">Manage your smart contracts securely via AlgoShield AI.</p>
         </motion.div>
 
@@ -102,32 +110,52 @@ export const Dashboard = () => {
             </div>
             
             <div className="space-y-4">
-              {recentScans.length === 0 ? (
+              {loadingScans ? (
+                <div className="space-y-4 animate-pulse">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex justify-between items-center p-4 bg-surface rounded-lg border border-border">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-white/5" />
+                        <div>
+                          <div className="h-5 bg-white/5 rounded w-40 mb-2" />
+                          <div className="h-3 bg-white/5 rounded w-24" />
+                        </div>
+                      </div>
+                      <div className="h-6 bg-white/5 rounded-full w-16" />
+                    </div>
+                  ))}
+                </div>
+              ) : recentScans.length === 0 ? (
                 <p className="text-gray-400">No recent scans found.</p>
               ) : (
                 recentScans.map((scan) => (
-                  <div key={scan.scan_id} className="flex justify-between items-center p-4 bg-surface-hover rounded-lg border border-border">
+                  <button
+                    key={scan.scan_id}
+                    onClick={() => navigate('/scan')}
+                    className="w-full text-left group flex justify-between items-center p-4 bg-surface hover:bg-surface/80 rounded-lg border border-border hover:border-primary/50 transition-all duration-300 cursor-pointer"
+                  >
                     <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-full border-2 flex justify-center items-center font-mono font-bold text-sm shadow-[0_0_10px_rgba(30,30,30,0.3)]
-                        ${scan.score > 70 ? 'border-safe text-safe shadow-[0_0_10px_rgba(0,255,136,0.3)]' : 
-                          scan.score > 40 ? 'border-warning text-warning shadow-[0_0_10px_rgba(255,170,0,0.3)]' : 
-                          'border-danger text-danger shadow-[0_0_10px_rgba(255,51,51,0.3)]'}`}>
+                      <div className={`w-12 h-12 rounded-full border-2 flex justify-center items-center font-mono font-bold text-sm shadow-[0_0_10px_rgba(30,30,30,0.3)] group-hover:shadow-lg transition-shadow
+                        ${scan.score > 70 ? 'border-safe text-safe shadow-[0_0_10px_rgba(0,255,136,0.3)] group-hover:shadow-[0_0_15px_rgba(0,255,136,0.5)]' : 
+                          scan.score > 40 ? 'border-warning text-warning shadow-[0_0_10px_rgba(255,170,0,0.3)] group-hover:shadow-[0_0_15px_rgba(255,170,0,0.5)]' : 
+                          'border-danger text-danger shadow-[0_0_10px_rgba(255,51,51,0.3)] group-hover:shadow-[0_0_15px_rgba(255,51,51,0.5)]'}`}>
                         {scan.score}
                       </div>
                       <div>
-                        <h4 className="font-syne font-bold text-lg">{scan.filename || `App ID: ${scan.app_id || 'Unknown'}`}</h4>
+                        <h4 className="font-syne font-bold text-lg group-hover:text-white transition-colors">{scan.filename || `App ID: ${scan.app_id || 'Unknown'}`}</h4>
                         <p className="text-xs text-gray-400 font-mono">{new Date(scan.created_at).toLocaleString()}</p>
                       </div>
                     </div>
-                    <div>
+                    <div className="flex items-center gap-3">
                       <span className={`px-3 py-1 rounded-full font-mono text-xs border
                         ${scan.risk_level === 'Safe' ? 'bg-safe/20 text-safe border-safe/50' : 
                           scan.risk_level === 'Risky' ? 'bg-warning/20 text-warning border-warning/50' : 
                           'bg-danger/20 text-danger border-danger/50'}`}>
                         {scan.risk_level.toUpperCase()}
                       </span>
+                      <ArrowRight className="w-4 h-4 text-gray-500 group-hover:text-primary group-hover:translate-x-1 transition-all" />
                     </div>
-                  </div>
+                  </button>
                 ))
               )}
             </div>
