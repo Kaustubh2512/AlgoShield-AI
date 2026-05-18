@@ -16,3 +16,6 @@ llama-cpp-python
 chromadb
 sentence-transformers
 huggingface-hub
+supabase
+httpx
+pydantic[email]

@@ -63,7 +63,9 @@ app.add_middleware(
 )
 
 from routes.scan import router as scan_router
+from routes.monitor import router as monitor_router
 app.include_router(scan_router)
+app.include_router(monitor_router)
 
 
 # ──────────────────────────────────────────────
@@ -233,67 +235,8 @@ async def get_certificates(wallet_address: str):
         })
     return results
 
-# ──────────────────────────────────────────────
-# ROUTE 6 — Start monitoring
-# ──────────────────────────────────────────────
-class MonitorRequest(BaseModel):
-    wallet_address: str
-    app_id: int
-    account_address: str
-    telegram_chat_id: Optional[str] = None
-    alert_email: Optional[str] = None
-
-@app.post("/monitor/start")
-async def start_monitoring(req: MonitorRequest):
-    existing = await monitor_jobs_col.find_one({
-        "app_id": req.app_id,
-        "wallet_address": req.wallet_address,
-        "is_active": True
-    })
-    if existing:
-        return {"job_id": existing["_id"], "message": "Already monitoring"}
-
-    job_id = str(uuid.uuid4())
-    await monitor_jobs_col.insert_one({
-        "_id": job_id,
-        "wallet_address": req.wallet_address,
-        "app_id": req.app_id,
-        "account_address": req.account_address,
-        "telegram_chat_id": req.telegram_chat_id,
-        "alert_email": req.alert_email,
-        "is_active": True,
-        "last_txn_id": None,
-        "created_at": datetime.utcnow()
-    })
-    return {"job_id": job_id, "message": "Monitoring started"}
-
-@app.post("/monitor/stop/{job_id}")
-async def stop_monitoring(job_id: str):
-    result = await monitor_jobs_col.update_one(
-        {"_id": job_id},
-        {"$set": {"is_active": False}}
-    )
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Monitor job not found")
-    return {"message": "Monitoring stopped", "job_id": job_id}
-
-# ──────────────────────────────────────────────
-# ROUTE 7 — Get alerts
-# ──────────────────────────────────────────────
-@app.get("/monitor/{app_id}/alerts")
-async def get_alerts(app_id: int, wallet_address: str):
-    job = await monitor_jobs_col.find_one({"app_id": app_id, "wallet_address": wallet_address})
-    if not job:
-        raise HTTPException(status_code=404, detail="Monitor job not found")
-    cursor = alerts_col.find({"monitor_job_id": job["_id"]}).sort("created_at", -1).limit(20)
-    alert_list = []
-    async for a in cursor:
-        alert_list.append({
-            "id": a["_id"], "severity": a["severity"],
-            "description": a["description"], "anomaly_score": a["anomaly_score"],
-            "txn_id": a.get("txn_id"), "timestamp": a["created_at"].isoformat()
-        })
-    return {"job_id": job["_id"], "is_active": job["is_active"], "alerts": alert_list}
+# Inline monitor routes moved to routes/monitor.py
+# Dead monitor_cycle code removed
 
 # ──────────────────────────────────────────────
 # ROUTE 8 — Health check
@@ -301,52 +244,6 @@ async def get_alerts(app_id: int, wallet_address: str):
 @app.get("/health")
 def health():
     return {"status": "AlgoShield AI running", "version": "2.0.0"}
-
-# ──────────────────────────────────────────────
-# BACKGROUND MONITOR CYCLE (every 30s)
-# ──────────────────────────────────────────────
-def monitor_cycle():
-    try:
-        from blockchain.poller import poll_new_transactions
-        from ml_models.anomaly import get_monitor
-    except ImportError:
-        return
-
-    jobs = list(_sync_db["monitor_jobs"].find({"is_active": True}))
-    for job in jobs:
-        try:
-            new_txns = poll_new_transactions(job["account_address"], job["app_id"], job.get("last_txn_id"))
-            if not new_txns:
-                continue
-            _sync_db["monitor_jobs"].update_one({"_id": job["_id"]}, {"$set": {"last_txn_id": new_txns[0].get("id")}})
-            mon = get_monitor(str(job["app_id"]))
-            mon.add_transactions(new_txns)
-            for txn in new_txns:
-                result = mon.check_transaction(txn)
-                if result.get("is_anomaly"):
-                    alert_id = str(uuid.uuid4())
-                    _sync_db["alerts"].insert_one({
-                        "_id": alert_id, "monitor_job_id": job["_id"],
-                        "app_id": job["app_id"], "txn_id": txn.get("id"),
-                        "anomaly_score": result["anomaly_score"],
-                        "severity": result["severity"], "description": result["description"],
-                        "is_read": False, "created_at": datetime.utcnow()
-                    })
-                    if job.get("telegram_chat_id"):
-                        _send_telegram(job["telegram_chat_id"], job["app_id"], result)
-        except Exception as e:
-            print(f"Monitor error job {job['_id']}: {e}")
-
-def _send_telegram(chat_id, app_id, result):
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
-    if not token:
-        return
-    emoji = {"Critical":"🔴","High":"🟠","Medium":"🟡","Low":"🔵"}.get(result["severity"],"⚠️")
-    requests.post(f"https://api.telegram.org/bot{token}/sendMessage", json={
-        "chat_id": chat_id,
-        "text": f"{emoji} *AlgoShield Alert*\nApp: `{app_id}`\nSeverity: *{result['severity']}*\n{result['description']}\n[View](https://allo.info/app/{app_id})",
-        "parse_mode": "Markdown"
-    }, timeout=5)
 
 if __name__ == "__main__":
     import uvicorn
