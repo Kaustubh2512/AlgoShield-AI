@@ -16,9 +16,9 @@ export const Navbar = () => {
 
   const getThemeIcon = () => {
     switch (theme) {
-      case 'default': return <Shield className="w-4 h-4 text-primary" />;
-      case 'black': return <Moon className="w-4 h-4 text-slate-400" />;
-      case 'light': return <Sun className="w-4 h-4 text-amber-500" />;
+      case 'default': return <Moon className="w-5 h-5 text-primary" />;
+      case 'black': return <Moon className="w-5 h-5 text-slate-400" />;
+      case 'light': return <Sun className="w-5 h-5 text-amber-500" />;
     }
   };
 
@@ -35,7 +35,7 @@ export const Navbar = () => {
   };
 
   return (
-    <nav className="border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-50">
+    <nav className="border-b border-white/[0.08] bg-black/40 backdrop-blur-xl sticky top-0 z-50 shadow-[0_10px_35px_rgba(0,0,0,0.7)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           <Link to="/" className="flex items-center gap-2 group cursor-pointer">
@@ -49,11 +49,10 @@ export const Navbar = () => {
             {/* Theme Switcher */}
             <button
               onClick={cycleTheme}
-              className="btn-secondary !py-2.5 !px-3.5 flex items-center justify-center gap-2 text-sm font-mono cursor-pointer bg-white/5 border-white/10 hover:border-primary/50 text-gray-300"
-              title={`Theme: ${getThemeLabel()}`}
+              className="p-2.5 rounded-full flex items-center justify-center cursor-pointer bg-white/5 border border-white/10 hover:border-primary/50 text-gray-300 hover:bg-white/10 transition-all duration-300"
+              title={`Cycle Theme: ${getThemeLabel()}`}
             >
               {getThemeIcon()}
-              <span className="text-xs hidden md:inline">{getThemeLabel()}</span>
             </button>
 
             {walletAddress ? (

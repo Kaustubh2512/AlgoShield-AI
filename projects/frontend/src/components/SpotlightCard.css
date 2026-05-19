@@ -1,15 +1,17 @@
 .card-spotlight {
   position: relative;
   border-radius: 1.5rem;
-  border: 1px solid #222;
-  background-color: #111;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background-color: rgba(10, 10, 10, 0.25); /* Translucent dark overlay, letting the background dither pattern show through sharply */
   padding: 2rem;
   overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --mouse-x: 50%;
   --mouse-y: 50%;
   --spotlight-color: rgba(255, 255, 255, 0.05);
 }
 
+/* Sharp, concentrated moving spotlight that follows the cursor */
 .card-spotlight::before {
   content: '';
   position: absolute;
@@ -17,13 +19,20 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle at var(--mouse-x) var(--mouse-y), var(--spotlight-color), transparent 80%);
+  background: radial-gradient(150px circle at var(--mouse-x) var(--mouse-y), var(--spotlight-color), transparent 80%);
   opacity: 0;
-  transition: opacity 0.5s ease;
+  transition: opacity 0.4s ease;
   pointer-events: none;
 }
 
 .card-spotlight:hover::before,
 .card-spotlight:focus-within::before {
-  opacity: 0.6;
+  opacity: 0.8;
+}
+
+.card-spotlight:hover {
+  border-color: rgba(0, 255, 136, 0.85); /* Bright green border highlight on hover */
+  background-color: rgba(0, 255, 136, 0.02); /* Very subtle green tint on hover */
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 25px rgba(0, 255, 136, 0.2);
+  transform: translateY(-3px);
 }

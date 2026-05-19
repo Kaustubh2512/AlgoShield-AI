@@ -12,6 +12,8 @@ import LogoLoop from '../components/LogoLoop';
 import Footer from '../components/Footer';
 import FloatingWallets from '../components/FloatingWallets';
 import FAQ from '../components/FAQ';
+import UseCases from '../components/UseCases';
+import CertifiedContractsRegistry from '../components/CertifiedContractsRegistry';
 
 export const Landing = () => {
   const { walletAddress, connectWallet } = useWallet();
@@ -86,7 +88,7 @@ export const Landing = () => {
               <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
                 <SpotlightCard className="h-full" spotlightColor="rgba(0, 212, 255, 0.2)">
                   <ShieldAlert className="w-12 h-12 text-secondary mb-4 drop-shadow-[0_0_10px_rgba(0,212,255,0.8)]" />
-                  <h3 className="text-2xl font-syne font-bold mb-2">Smart Contract Scanner</h3>
+                  <h3 className="text-2xl font-syne font-bold mb-2 text-white">Smart Contract Scanner</h3>
                   <p className="text-gray-400 text-sm">Upload your .teal or point to an App ID for an instant line-by-line AI vulnerability analysis.</p>
                 </SpotlightCard>
               </motion.div>
@@ -95,7 +97,7 @@ export const Landing = () => {
               <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
                 <SpotlightCard className="border-t border-primary/50 h-full" spotlightColor="rgba(255, 170, 0, 0.2)">
                   <Award className="w-12 h-12 text-warning mb-4 drop-shadow-[0_0_10px_rgba(255,170,0,0.8)]" />
-                  <h3 className="text-2xl font-syne font-bold mb-2">NFT Security Certificate</h3>
+                  <h3 className="text-2xl font-syne font-bold mb-2 text-white">NFT Security Certificate</h3>
                   <p className="text-gray-400 text-sm">Pass the audit with a high score and automatically mint a verifiable on-chain proof of security.</p>
                 </SpotlightCard>
               </motion.div>
@@ -104,13 +106,19 @@ export const Landing = () => {
               <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
                 <SpotlightCard className="h-full" spotlightColor="rgba(0, 255, 136, 0.2)">
                   <Activity className="w-12 h-12 text-primary mb-4 drop-shadow-[0_0_10px_rgba(0,255,136,0.8)]" />
-                  <h3 className="text-2xl font-syne font-bold mb-2">24/7 Live Monitoring</h3>
+                  <h3 className="text-2xl font-syne font-bold mb-2 text-white">24/7 Live Monitoring</h3>
                   <p className="text-gray-400 text-sm">Enable continuous observation of your smart contract state and get alerted of malicious activities.</p>
                 </SpotlightCard>
               </motion.div>
             </motion.div>
           </div>
         </main>
+
+        {/* Premium Use Cases Section */}
+        <UseCases />
+
+        {/* Live Security Registry Section */}
+        <CertifiedContractsRegistry />
 
         {/* Premium FAQ Section */}
         <FAQ />
