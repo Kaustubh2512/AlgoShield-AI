@@ -120,3 +120,13 @@ projects/
 ## 🛡️ License
 
 MIT — [github.com/Kaustubh2512/AlgoShield-AI](https://github.com/Kaustubh2512/AlgoShield-AI)
+
+---
+
+## 🤝 Team
+
+Developed with ❤️ by **TEAM QANTAS** for the **Algorand 3.0 Hack Series 🐍**.
+
+*Securing the decentralized future, one block at a time.*
+
+#   A l g o S h i e l d - A I
