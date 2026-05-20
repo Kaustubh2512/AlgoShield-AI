@@ -1,5 +1,7 @@
 # backend/app.py
 import uuid, hashlib, os, requests
+from dotenv import load_dotenv
+load_dotenv()
 from datetime import datetime
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, UploadFile, File, HTTPException, Form
@@ -18,36 +20,50 @@ from database import scans_col, certificates_col, monitor_jobs_col, alerts_col, 
 from apscheduler.schedulers.background import BackgroundScheduler
 from pymongo import MongoClient
 import certifi
-from dotenv import load_dotenv
-load_dotenv()
 
 ca = certifi.where()
 scheduler = BackgroundScheduler()
-_sync_db = MongoClient(
-    os.getenv("MONGODB_URL"), 
-    tlsCAFile=ca, 
-    tlsAllowInvalidCertificates=True,
-    serverSelectionTimeoutMS=5000
-)[os.getenv("MONGODB_DB_NAME", "algoshield")]
+
+_sync_db = None
+try:
+    MONGODB_URL = os.getenv("MONGODB_URL")
+    if MONGODB_URL:
+        if "localhost" in MONGODB_URL or "127.0.0.1" in MONGODB_URL:
+            client = MongoClient(
+                MONGODB_URL,
+                serverSelectionTimeoutMS=5000
+            )
+        else:
+            client = MongoClient(
+                MONGODB_URL, 
+                tlsCAFile=ca, 
+                tlsAllowInvalidCertificates=True,
+                serverSelectionTimeoutMS=5000
+            )
+        _sync_db = client[os.getenv("MONGODB_DB_NAME", "algoshield")]
+    else:
+        print("DB init warning: MONGODB_URL is not set")
+except Exception as e:
+    print(f"DB init warning: {e}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup logic
     try:
         await create_indexes()
-        print("✅ MongoDB Indexes verified")
+        print("[OK] MongoDB Indexes verified")
     except Exception as e:
-        print(f"⚠️ Warning: Database initialization skipped or failed: {e}")
+        print(f"[WARN] Database initialization skipped or failed: {e}")
 
     try:
         from services.monitor_service import run_monitoring_cycle
         scheduler.add_job(run_monitoring_cycle, 'interval', seconds=30, id='monitor', replace_existing=True)
         scheduler.start()
-        print("✅ Background Monitoring started")
+        print("[OK] Background Monitoring started")
     except Exception as e:
-        print(f"⚠️ Warning: Scheduler failed to start: {e}")
+        print(f"[WARN] Scheduler failed to start: {e}")
 
-    print("🚀 AlgoShield AI Backend is ready")
+    print("[READY] AlgoShield AI Backend is ready")
     yield
     # Shutdown logic
     scheduler.shutdown(wait=False)

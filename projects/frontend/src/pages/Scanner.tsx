@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from '../components/Navbar';
 import { useWallet } from '../context/WalletContext';
-import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, UploadCloud, Search, ShieldAlert } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ShieldCheck, UploadCloud, Search, ShieldAlert, History } from 'lucide-react';
 import { ScoreGauge } from '../components/ScoreGauge';
 import { VulnerabilityCard } from '../components/VulnerabilityCard';
 import { CodeViewer } from '../components/CodeViewer';
@@ -24,6 +24,80 @@ export const Scanner = () => {
   const [suggestions, setSuggestions] = useState<any>(null);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [responseTime, setResponseTime] = useState<number | null>(null);
+
+  const [recentScans, setRecentScans] = useState<any[]>([]);
+  const location = useLocation();
+
+  useEffect(() => {
+    if (walletAddress) {
+      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/scans/${walletAddress}`)
+        .then(res => res.json())
+        .then(data => setRecentScans(data.slice(0, 5)))
+        .catch(err => console.error(err));
+    }
+  }, [walletAddress, scanResult]);
+
+  useEffect(() => {
+    if (location.state && location.state.scanResult) {
+      const restored = location.state.scanResult;
+      setScanResult(restored);
+      const cachedSuggestions = localStorage.getItem(`algoshield_suggestions_${restored.scan_id}`);
+      if (cachedSuggestions) {
+        setSuggestions(JSON.parse(cachedSuggestions));
+        setShowSuggestions(true);
+      } else {
+        setSuggestions(null);
+        setShowSuggestions(false);
+      }
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
+
+  const handleSelectScan = async (scanId: string) => {
+    // Check local storage cache
+    const cached = localStorage.getItem(`algoshield_scan_${scanId}`);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      setScanResult(parsed);
+      const cachedSuggestions = localStorage.getItem(`algoshield_suggestions_${scanId}`);
+      if (cachedSuggestions) {
+        setSuggestions(JSON.parse(cachedSuggestions));
+        setShowSuggestions(true);
+      } else {
+        setSuggestions(null);
+        setShowSuggestions(false);
+      }
+      return;
+    }
+
+    // Otherwise, fetch, format, cache, and restore
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/scan/${scanId}`);
+      if (!res.ok) throw new Error('Failed to fetch scan details');
+      const data = await res.json();
+      
+      const formattedData = {
+        ...data,
+        vulnerabilities: data.vulnerabilities.map((v: any) => ({
+          line: v.line || 0,
+          issue: v.type || v.issue,
+          severity: v.severity,
+          suggestion: v.suggestion || "Review the flagged code block."
+        }))
+      };
+
+      // Cache it
+      localStorage.setItem(`algoshield_scan_${scanId}`, JSON.stringify(formattedData));
+      
+      setScanResult(formattedData);
+      setSuggestions(null);
+      setShowSuggestions(false);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to load previous scan details.');
+    }
+  };
 
   const handleMint = async () => {
     setIsMinting(true);
@@ -95,7 +169,7 @@ export const Scanner = () => {
       }
 
       const data = await response.json();
-      setScanResult({
+      const formattedData = {
         ...data,
         vulnerabilities: data.vulnerabilities.map((v: any) => ({
           line: v.line || 0,
@@ -103,7 +177,11 @@ export const Scanner = () => {
           severity: v.severity,
           suggestion: v.suggestion || "Review the flagged code block."
         }))
-      });
+      };
+
+      setScanResult(formattedData);
+      // Cache the scan details locally
+      localStorage.setItem(`algoshield_scan_${data.scan_id}`, JSON.stringify(formattedData));
     } catch (error) {
       console.error('Scan error:', error);
       alert('Failed to scan contract. Please try again.');
@@ -114,8 +192,11 @@ export const Scanner = () => {
 
   const handleGetSuggestions = async () => {
     if (!scanResult) return;
+    setSuggestions(null);
     setLoadingSuggestions(true);
     setShowSuggestions(true);
+    setResponseTime(null);
+    const startTime = performance.now();
     try {
       // Use scan_id if available, otherwise re-send the file
       const formData = new FormData();
@@ -132,7 +213,13 @@ export const Scanner = () => {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Suggestions failed');
+      const endTime = performance.now();
+      setResponseTime(Number(((endTime - startTime) / 1000).toFixed(1)));
       setSuggestions(data);
+      // Cache suggestions
+      if (scanResult && scanResult.scan_id) {
+        localStorage.setItem(`algoshield_suggestions_${scanResult.scan_id}`, JSON.stringify(data));
+      }
     } catch (err: any) {
       console.error('Suggestions error:', err.message);
     } finally {
@@ -220,6 +307,57 @@ export const Scanner = () => {
                 </div>
               )}
             </SpotlightCard>
+
+            {/* Recent Scans Sidebar/Section */}
+            <div className="mt-8">
+              <SpotlightCard spotlightColor="rgba(255, 255, 255, 0.1)">
+                <div className="flex items-center gap-3 mb-6 border-b border-border pb-4">
+                  <History className="w-6 h-6 text-gray-400" />
+                  <h2 className="text-xl font-syne font-bold">Recent Scans</h2>
+                </div>
+                
+                <div className="space-y-4">
+                  {recentScans.length === 0 ? (
+                    <p className="text-gray-400">No recent scans found.</p>
+                  ) : (
+                    recentScans.map((scan) => {
+                      const isActive = scanResult && scanResult.scan_id === scan.scan_id;
+                      return (
+                        <button
+                          key={scan.scan_id}
+                          onClick={() => handleSelectScan(scan.scan_id)}
+                          title="Reload previous scan"
+                          className={`w-full flex justify-between items-center p-4 bg-surface-hover rounded-lg border transition-all duration-300 text-left cursor-pointer hover:border-primary/50 hover:shadow-[0_0_15px_rgba(0,255,136,0.1)]
+                            ${isActive ? 'border-primary shadow-[0_0_20px_rgba(0,255,136,0.2)] bg-primary/5' : 'border-border'}
+                          `}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`w-12 h-12 rounded-full border-2 flex justify-center items-center font-mono font-bold text-sm shadow-[0_0_10px_rgba(30,30,30,0.3)]
+                              ${scan.score > 70 ? 'border-safe text-safe shadow-[0_0_10px_rgba(0,255,136,0.3)]' : 
+                                scan.score > 40 ? 'border-warning text-warning shadow-[0_0_10px_rgba(255,170,0,0.3)]' : 
+                                'border-danger text-danger shadow-[0_0_10px_rgba(255,51,51,0.3)]'}`}>
+                              {scan.score}
+                            </div>
+                            <div>
+                              <h4 className="font-syne font-bold text-lg">{scan.filename || `App ID: ${scan.app_id || 'Unknown'}`}</h4>
+                              <p className="text-xs text-gray-400 font-mono">{new Date(scan.created_at).toLocaleString()}</p>
+                            </div>
+                          </div>
+                          <div>
+                            <span className={`px-3 py-1 rounded-full font-mono text-xs border
+                              ${scan.risk_level === 'Safe' ? 'bg-safe/20 text-safe border-safe/50' : 
+                                scan.risk_level === 'Risky' ? 'bg-warning/20 text-warning border-warning/50' : 
+                                'bg-danger/20 text-danger border-danger/50'}`}>
+                              {scan.risk_level.toUpperCase()}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </SpotlightCard>
+            </div>
           </div>
         ) : (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-10 duration-700">
@@ -281,33 +419,82 @@ export const Scanner = () => {
                       <VulnerabilityCard key={i} {...v} />
                     ))}
                   </motion.div>
-                  {showSuggestions && (
-                    <div style={{ marginTop: '1.5rem' }}>
-                      {loadingSuggestions && (
-                        <div style={{ color: '#64748b', padding: '1rem', textAlign: 'center' }}>
-                          ⟳ Analyzing with AI model...
-                        </div>
-                      )}
-                      {suggestions && !loadingSuggestions && (
-                        <SuggestionPanel 
-                          suggestions={suggestions.suggestions || []} 
-                          score={suggestions.security_score} 
-                          summary={suggestions.summary} 
-                        />
-                      )}
-                    </div>
-                  )}
                 </SpotlightCard>
               </div>
 
-              {/* Code Viewer */}
-              <div className="lg:col-span-8 flex flex-col">
-                <h3 className="text-white font-syne font-bold text-xl mb-4 pl-2">Contract Code</h3>
-                <CodeViewer 
-                  code={scanResult.contract_code} 
-                  highlights={scanResult.vulnerabilities.map((v: any) => v.line)} 
-                />
+              {/* Code Viewer & AI Suggestions */}
+              <div className="lg:col-span-8 flex flex-col space-y-6">
+                <div>
+                  <h3 className="text-white font-syne font-bold text-xl mb-4 pl-2">Contract Code</h3>
+                  <CodeViewer 
+                    code={scanResult.contract_code} 
+                    highlights={scanResult.vulnerabilities.map((v: any) => v.line)} 
+                  />
+                </div>
+
+                {showSuggestions && (
+                  <div className="w-full">
+                    <SuggestionPanel 
+                      suggestions={suggestions?.suggestions || []} 
+                      score={suggestions?.security_score || 0} 
+                      summary={suggestions?.summary || ''} 
+                      loading={loadingSuggestions}
+                      responseTime={responseTime}
+                    />
+                  </div>
+                )}
               </div>
+            </div>
+
+            {/* Recent Scans Section under Results */}
+            <div className="mt-12 border-t border-border pt-8">
+              <SpotlightCard spotlightColor="rgba(255, 255, 255, 0.1)">
+                <div className="flex items-center gap-3 mb-6 border-b border-border pb-4">
+                  <History className="w-6 h-6 text-gray-400" />
+                  <h2 className="text-xl font-syne font-bold">Recent Scans</h2>
+                </div>
+                
+                <div className="space-y-4">
+                  {recentScans.length === 0 ? (
+                    <p className="text-gray-400">No recent scans found.</p>
+                  ) : (
+                    recentScans.map((scan) => {
+                      const isActive = scanResult && scanResult.scan_id === scan.scan_id;
+                      return (
+                        <button
+                          key={scan.scan_id}
+                          onClick={() => handleSelectScan(scan.scan_id)}
+                          title="Reload previous scan"
+                          className={`w-full flex justify-between items-center p-4 bg-surface-hover rounded-lg border transition-all duration-300 text-left cursor-pointer hover:border-primary/50 hover:shadow-[0_0_15px_rgba(0,255,136,0.1)]
+                            ${isActive ? 'border-primary shadow-[0_0_20px_rgba(0,255,136,0.2)] bg-primary/5' : 'border-border'}
+                          `}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`w-12 h-12 rounded-full border-2 flex justify-center items-center font-mono font-bold text-sm shadow-[0_0_10px_rgba(30,30,30,0.3)]
+                              ${scan.score > 70 ? 'border-safe text-safe shadow-[0_0_10px_rgba(0,255,136,0.3)]' : 
+                                scan.score > 40 ? 'border-warning text-warning shadow-[0_0_10px_rgba(255,170,0,0.3)]' : 
+                                'border-danger text-danger shadow-[0_0_10px_rgba(255,51,51,0.3)]'}`}>
+                              {scan.score}
+                            </div>
+                            <div>
+                              <h4 className="font-syne font-bold text-lg">{scan.filename || `App ID: ${scan.app_id || 'Unknown'}`}</h4>
+                              <p className="text-xs text-gray-400 font-mono">{new Date(scan.created_at).toLocaleString()}</p>
+                            </div>
+                          </div>
+                          <div>
+                            <span className={`px-3 py-1 rounded-full font-mono text-xs border
+                              ${scan.risk_level === 'Safe' ? 'bg-safe/20 text-safe border-safe/50' : 
+                                scan.risk_level === 'Risky' ? 'bg-warning/20 text-warning border-warning/50' : 
+                                'bg-danger/20 text-danger border-danger/50'}`}>
+                              {scan.risk_level.toUpperCase()}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </SpotlightCard>
             </div>
           </div>
         )}

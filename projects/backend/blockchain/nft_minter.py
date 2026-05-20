@@ -14,9 +14,13 @@ def _client():
     return algod.AlgodClient(ALGOD_TOKEN, ALGOD_ADDRESS, headers={"User-Agent": "AlgoShield/1.0"})
 
 def mint_security_certificate(recipient_address: str, app_id: int, security_score: int, scan_id: str, contract_hash: str) -> dict:
-    phrase = os.getenv("PLATFORM_MNEMONIC", "")
-    if not phrase or phrase == "word1 word2 word3 ... word25":
-        raise ValueError("PLATFORM_MNEMONIC not set in .env. Run generate_wallet.py first.")
+    phrase = os.getenv("PLATFORM_MNEMONIC", "").strip()
+    phrase = " ".join(phrase.split())
+    print("Mnemonic raw:", repr(phrase))
+    print("Mnemonic word count:", len(phrase.split()))
+
+    if not phrase or phrase == "your 25 word mnemonic" or len(phrase.split()) != 25:
+        raise ValueError("PLATFORM_MNEMONIC not set correctly in .env. Run generate_wallet.py first.")
 
     private_key    = mnemonic.to_private_key(phrase)
     platform_addr  = account.address_from_private_key(private_key)

@@ -23,6 +23,19 @@ logger = logging.getLogger(__name__)
 # Severity Weights for Security Score mapping
 SEVERITY_WEIGHTS = {"CRITICAL": 25, "HIGH": 15, "MEDIUM": 10, "LOW": 5, "Critical": 25, "High": 15, "Medium": 10, "Low": 5}
 
+def extract_snippet(content: str, line_number: int, context_lines: int = 2) -> str:
+    if not content:
+        return ""
+    lines = content.split("\n")
+    start = max(0, line_number - 1 - context_lines)
+    end = min(len(lines), line_number + context_lines)
+    snippet_lines = []
+    for idx in range(start, end):
+        line_num = idx + 1
+        indicator = ">>> " if line_num == line_number else "    "
+        snippet_lines.append(f"{line_num:3d} {indicator}{lines[idx]}")
+    return "\n".join(snippet_lines)
+
 
 def map_issue_to_lines(issue_id: str, content: str) -> List[int]:
     """
@@ -78,6 +91,12 @@ def get_rule_based_suggestions(
                 "suggestion": "Add an assertion that Txn.rekey_to() equals the zero address.",
                 "lines": lines,
                 "line": lines[0] if lines else 1,
+                "analysis": "The smart contract fails to validate the RekeyTo transaction field. Under the Algorand protocol, any transaction can transition control of the sending account to a new address. Without checks, this field defaults to allowing any private key to take ownership.",
+                "attack_vector": "An attacker initiates a transaction call passing their malicious address in the RekeyTo parameter. If the contract execution path resolves to approval without checking this parameter, the attacker steals the account.",
+                "impact": "CRITICAL. Absolute compromise of the smart contract's control, state, and accumulated assets. The owner is permanently locked out.",
+                "recommended_patch": "Enforce that the RekeyTo parameter strictly matches the ZeroAddress in all transaction groups.",
+                "patched_code": "txn RekeyTo\nglobal ZeroAddress\n==\nassert",
+                "best_practices": "Include universal transaction template validation checking all transactional security fields (RekeyTo, CloseRemainderTo, AssetCloseTo) on startup."
             }
         )
 
@@ -95,6 +114,12 @@ def get_rule_based_suggestions(
                 "suggestion": "Add an assertion that Txn.close_remainder_to() equals the zero address.",
                 "lines": lines,
                 "line": lines[0] if lines else 1,
+                "analysis": "The contract does not verify that the CloseRemainderTo field is set to ZeroAddress. In Algorand, specifying CloseRemainderTo forces the account to close and transfers its entire remaining balance to that address.",
+                "attack_vector": "An attacker sets CloseRemainderTo to their own address in a transaction. When the contract executes and approves, all ALGO funds are swept to the attacker's wallet.",
+                "impact": "CRITICAL. Complete drain of all ALGO funds stored in the contract's escrow account, resulting in immediate insolvency.",
+                "recommended_patch": "Compare the CloseRemainderTo field directly against the ZeroAddress to reject balance sweeps.",
+                "patched_code": "txn CloseRemainderTo\nglobal ZeroAddress\n==\nassert",
+                "best_practices": "For any payment transaction, explicitly guarantee that closeout fields are cleared."
             }
         )
 
@@ -112,10 +137,16 @@ def get_rule_based_suggestions(
                 "suggestion": "Ensure the receiver address is validated against a whitelist or expected address.",
                 "lines": lines,
                 "line": lines[0] if lines else 1,
+                "analysis": "The smart contract process does not assert the destination address for outgoing payouts. This allows transaction redirection to unauthorized recipients.",
+                "attack_vector": "An attacker intercepts or issues a payout call, modifying the Receiver parameter to their personal address. Since no address assertion is performed, the protocol approves the payout to the attacker.",
+                "impact": "HIGH. Direct theft of assets during payout transactions.",
+                "recommended_patch": "Assert the Receiver parameter matches a whitelist, static address, or expected recipient.",
+                "patched_code": "txn Receiver\naddr EXPECTED_ADDRESS\n==\nassert",
+                "best_practices": "Validate payment destinations against state-stored variables or constants."
             }
         )
 
-    # 4. Logic Density Exception (Logic Bomb / Unrestricted Approval)
+    # 4. Logic Bomb Check
     if features.get("security_checks", 0) <= 1 and features.get("num_txn", 0) > 0:
         lines = map_issue_to_lines("Logic Bomb", content)
         suggestions.append(
@@ -129,6 +160,12 @@ def get_rule_based_suggestions(
                 "suggestion": "Add more explicit security assertions to critical logic paths.",
                 "lines": lines,
                 "line": lines[0] if lines else 1,
+                "analysis": "The contract lacks essential security routing checks and approves transactions with very low logic density, exposing it to unintended states.",
+                "attack_vector": "An attacker calls the contract with a malformed transaction type (such as key registration) that isn't handled by the contract's simple code path, leading to unexpected approvals.",
+                "impact": "HIGH. Systemic vulnerability to logic bypasses and unexpected transaction execution.",
+                "recommended_patch": "Structure your transaction handlers with strict type and fee validations.",
+                "patched_code": "# Guard Fee and Type\nglobal GroupSize\nint 1\n==\ntxn Fee\nint 1000\n<=\n&&\ntxn TypeEnum\nint pay\n==\n&&\nassert",
+                "best_practices": "Ensure every execution branch fails closed and only succeeds when all criteria are met."
             }
         )
 
@@ -285,6 +322,50 @@ def generate_suggestions(
     Handles caching JSON serialization.
     Returns: (suggestions_list, security_score)
     """
+    if prediction_label == "SAFE":
+        safe_text = """Excellent work.
+This smart contract passed AlgoShield AI security checks.
+
+Security confidence:
+Ready for deployment.
+
+No critical vulnerabilities detected.
+No immediate remediation required.
+
+Recommended next steps:
+• run final manual review
+• perform testnet deployment
+• validate edge-case behavior
+• proceed toward production
+
+NFT Certification:
+You are eligible to mint your AlgoShield Security NFT Certificate.
+
+Why mint it?
+• proves security scan completion
+• creates immutable trust proof
+• increases project credibility
+• shareable on-chain security badge
+
+Status:
+Ready to mint."""
+
+        safe_suggestion = {
+            "line": 0,
+            "issue": "CONTRACT STATUS: SAFE",
+            "vulnerability": "CONTRACT STATUS: SAFE",
+            "severity": "Safe",
+            "description": safe_text,
+            "explanation": safe_text,
+            "analysis": safe_text,
+            "fix": "",
+            "patched_code": "",
+            "vulnerable_code": "",
+            "why_fix_works": "",
+            "best_practices": ""
+        }
+        return [safe_suggestion], 100
+
     # Create deterministic hash string for caching
     content_hash = hashlib.md5(content.encode()).hexdigest() + "::CONTENT::" + content
     features_json = json.dumps(features, sort_keys=True)
@@ -310,8 +391,8 @@ def get_suggestions(contract_code: str) -> dict:
 
     # Format the summary based on score
     summary = f"Security Analysis: {prediction_label}"
-    if score >= 70:
-        summary = "Contract appears generally safe, but review minor suggestions."
+    if prediction_label == "SAFE" or score >= 80:
+        summary = "Contract passed security checks. Ready for deployment."
     elif score >= 40:
         summary = "Contract is suspicious. Address the highlighted vulnerabilities."
     else:
@@ -323,12 +404,41 @@ def get_suggestions(contract_code: str) -> dict:
         line = s.get("line", 0)
         if not line and s.get("lines"):
             line = s["lines"][0]
+
+        analysis = s.get("analysis", s.get("explanation", "No description provided"))
+        attack_vector = s.get("attack_vector", "Exploitation of unvalidated smart contract parameters or routing logic.")
+        impact = s.get("impact", f"{s.get('severity', 'Medium').upper()} threat level.")
+        recommended_patch = s.get("recommended_patch", "Incorporate safety assertions inside the TEAL source code.")
+        patched_code = s.get("patched_code", s.get("fix", "Review context for details"))
+        best_practices = s.get("best_practices", "Follow security templates and audit execution paths.")
+
+        # Extract vulnerable snippet from the contract code
+        vulnerable_code = ""
+        if line and contract_code:
+            vulnerable_code = extract_snippet(contract_code, line)
+
+        why_works_map = {
+            "Missing RekeyTo Validation": "By checking that Txn.rekey_to() is exactly the ZeroAddress, the smart contract prevents any malicious payload from rekeying the account, ensuring only the contract owner has authorized control.",
+            "Missing CloseRemainderTo Validation": "Forcing the CloseRemainderTo parameter to ZeroAddress ensures that transaction execution cannot close the account or sweep the remaining escrow balance to an external recipient.",
+            "Unvalidated Receiver Address": "Asserting the transaction Receiver matches a trusted predefined address prevents attackers from modifying the payment destination to divert assets.",
+            "Insufficient Security Guards (Logic Bomb pattern)": "Structuring routing blocks with strict fee and transaction type checks ensures that the logic only executes on intended pathways, failing closed for all other inputs."
+        }
+        why_fix_works = s.get("why_fix_works", why_works_map.get(s.get("issue", ""), "It enforces strict validation checks to reject unauthorized transaction params."))
+
         formatted_suggestions.append({
             "line": line,
             "vulnerability": s.get("issue", "Unknown vulnerability"),
             "description": s.get("explanation", "No description provided"),
             "fix": s.get("fix", "Review context for details"),
-            "severity": s.get("severity", "Medium").capitalize()
+            "severity": s.get("severity", "Medium").capitalize(),
+            "analysis": analysis,
+            "attack_vector": attack_vector,
+            "impact": impact,
+            "recommended_patch": recommended_patch,
+            "patched_code": patched_code,
+            "best_practices": best_practices,
+            "vulnerable_code": vulnerable_code,
+            "why_fix_works": why_fix_works
         })
 
     return {

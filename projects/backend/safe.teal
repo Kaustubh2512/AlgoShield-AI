@@ -1,0 +1,27 @@
+#pragma version 6
+// Sample safe TEAL with all required security checks
+txn RekeyTo
+global ZeroAddress
+==
+assert
+txn CloseRemainderTo
+global ZeroAddress
+==
+assert
+txn TypeEnum
+int pay
+==
+assert
+txn Fee
+global MinTxnFee
+==
+assert
+txn Amount
+int 1000000
+>=
+assert
+txn Receiver
+addr AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+==
+assert
+int 1

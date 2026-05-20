@@ -23,6 +23,40 @@ export const Dashboard = () => {
     }
   }, [walletAddress, navigate]);
 
+  const handleSelectScan = async (scanId: string) => {
+    // Check local storage cache
+    const cached = localStorage.getItem(`algoshield_scan_${scanId}`);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      navigate('/scan', { state: { scanResult: parsed } });
+      return;
+    }
+
+    // Otherwise, fetch, format, cache, and navigate
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/scan/${scanId}`);
+      if (!res.ok) throw new Error('Failed to fetch scan details');
+      const data = await res.json();
+      
+      const formattedData = {
+        ...data,
+        vulnerabilities: data.vulnerabilities.map((v: any) => ({
+          line: v.line || 0,
+          issue: v.type || v.issue,
+          severity: v.severity,
+          suggestion: v.suggestion || "Review the flagged code block."
+        }))
+      };
+
+      // Cache it
+      localStorage.setItem(`algoshield_scan_${scanId}`, JSON.stringify(formattedData));
+      navigate('/scan', { state: { scanResult: formattedData } });
+    } catch (err) {
+      console.error(err);
+      alert('Failed to load previous scan details.');
+    }
+  };
+
   if (!walletAddress) return null;
 
   return (
@@ -106,7 +140,12 @@ export const Dashboard = () => {
                 <p className="text-gray-400">No recent scans found.</p>
               ) : (
                 recentScans.map((scan) => (
-                  <div key={scan.scan_id} className="flex justify-between items-center p-4 bg-surface-hover rounded-lg border border-border">
+                  <button 
+                    key={scan.scan_id} 
+                    onClick={() => handleSelectScan(scan.scan_id)}
+                    title="Reload previous scan"
+                    className="w-full flex justify-between items-center p-4 bg-surface-hover rounded-lg border border-border text-left cursor-pointer hover:border-primary/50 hover:shadow-[0_0_15px_rgba(0,255,136,0.1)] transition-all duration-300"
+                  >
                     <div className="flex items-center gap-4">
                       <div className={`w-12 h-12 rounded-full border-2 flex justify-center items-center font-mono font-bold text-sm shadow-[0_0_10px_rgba(30,30,30,0.3)]
                         ${scan.score > 70 ? 'border-safe text-safe shadow-[0_0_10px_rgba(0,255,136,0.3)]' : 
@@ -127,7 +166,7 @@ export const Dashboard = () => {
                         {scan.risk_level.toUpperCase()}
                       </span>
                     </div>
-                  </div>
+                  </button>
                 ))
               )}
             </div>

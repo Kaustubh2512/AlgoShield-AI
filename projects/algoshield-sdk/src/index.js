@@ -56,9 +56,25 @@ class AlgoShield {
     }
     return results;
   }
+
+  async mintCertificate(scanId, walletAddress) {
+    try {
+      const res = await axios.post(`${this.config.apiUrl}/mint-certificate`, {
+        scan_id: scanId,
+        wallet_address: walletAddress
+      }, {
+        headers: { 'X-API-Key': this.config.apiKey }
+      });
+      return res.data;
+    } catch (e) {
+      if (!this.config.silent) printError(e);
+      throw e;
+    }
+  }
 }
 
 module.exports = AlgoShield;
 module.exports.scan      = (code, opts) => new AlgoShield(opts).scan(code);
 module.exports.scanFile  = (fp, opts)   => new AlgoShield(opts).scanFile(fp);
 module.exports.watch     = (dp, opts)   => new AlgoShield(opts).watch(dp);
+module.exports.mint      = (sid, addr, opts) => new AlgoShield(opts).mintCertificate(sid, addr);

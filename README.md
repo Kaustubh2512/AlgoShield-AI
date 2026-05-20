@@ -1,182 +1,207 @@
-# 🛡️ AlgoShield AI — Next-Gen Smart Contract Security on Algorand
+# AlgoShield AI
 
-![AlgoShield Banner](https://img.shields.io/badge/Algorand-3.0_Hackathon-blue?style=for-the-badge&logo=algorand)
-![AI-Powered](https://img.shields.io/badge/AI--Powered-Security-00ff88?style=for-the-badge)
-![Built for Developers](https://img.shields.io/badge/Built_for-Developers-white?style=for-the-badge)
-![Version](https://img.shields.io/badge/Version-2.0.0-orange?style=for-the-badge)
+> AI-powered smart contract security scanner for the Algorand blockchain
 
-**AlgoShield AI** is an all-in-one security ecosystem for Algorand developers. It combines advanced Machine Learning, Small Language Models (SLMs), and 24/7 live on-chain monitoring to ensure every smart contract on Algorand is safe, audited, and certified.
+AlgoShield AI scans TEAL smart contracts for vulnerabilities using machine learning, provides actionable remediation suggestions, monitors deployed contracts in real-time, and mints scan certificates as NFTs on the Algorand blockchain.
 
 ---
 
-## 🌌 The Vision
-Smart contract vulnerabilities cost the ecosystem millions. **AlgoShield AI** automates the entire audit lifecycle. From the moment you write your code to the moment it's deployed on mainnet, AlgoShield provides instant AI-driven security scores, actionable RAG-based code fixes, on-chain certificates, and continuous live monitoring. 
-
-Turn security from a bottleneck into your competitive advantage.
-
----
-
-## 🏗️ Architecture
+## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    FRONTEND (React + Vite)                   │
-│  Landing │ Dashboard │ Scanner │ Certificates │ Monitor      │
-│  Pera Wallet Connect │ Tailwind CSS │ TypeScript             │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ HTTP
-┌──────────────────────────▼──────────────────────────────────┐
-│                    BACKEND (FastAPI)                          │
-│                                                              │
-│  ┌──────────────┐  ┌──────────────┐  ┌───────────────────┐  │
-│  │ AI Scanner   │  │ NFT Minting  │  │ 24hr Monitoring   │  │
-│  │ ML Model     │  │ ARC-69 Certs │  │ Anomaly Detection │  │
-│  │ RAG/SLM      │  │ Pera Wallet  │  │ Email + Telegram  │  │
-│  │ Rules Engine │  │              │  │ Alerts            │  │
-│  └──────┬───────┘  └──────┬───────┘  └───────┬───────────┘  │
-│         │                 │                   │              │
-│    MongoDB           Algorand            Supabase            │
-│  (Scans, Certs)      Testnet         (Monitoring DB)         │
-└─────────────────────────────────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────┐
-│                 SDK (npm: @kaustubh2512/algoshield)           │
-│           scan() │ scanFile() │ watch() │ CLI                │
-└─────────────────────────────────────────────────────────────┘
+                ┌──────────────┐
+                │   Frontend   │  React/TypeScript + React/JSX (Vite)
+                └──────┬───────┘
+                       │ HTTP/REST
+                ┌──────▼───────┐
+                │   Backend    │  FastAPI (Python)
+                │              │
+                │  ┌─────────┐ │
+                │  │ ML Core │ │  sklearn, SLM, ChromaDB, RAG
+                │  └─────────┘ │
+                │  ┌─────────┐ │
+                │  │Monitor  │ │  APScheduler, Telegram, Supabase
+                │  └─────────┘ │
+                │  ┌─────────┐ │
+                │  │NFT      │ │  Algorand SDK — mint certificates
+                │  └─────────┘ │
+                └──────┬───────┘
+                       │
+            ┌──────────▼──────────┐
+            │   CLI (algoshield)  │  Node.js SDK — interactive & CI/CD
+            └─────────────────────┘
 ```
 
+## Features
+
+### AI/ML Vulnerability Scanner
+- **Feature extraction** — Parses TEAL bytecode and extracts security-relevant features
+- **ML inference** — Trained ensemble model (Random Forest + Gradient Boosting) classifies contracts as Safe or Risky
+- **SLM analysis** — Small Language Model fallback for ambiguous results
+- **RAG pipeline** — Retrieval-Augmented Generation using ChromaDB for context-aware suggestions
+- **Confidence scoring** — Each scan returns a risk percentage and top contributing features
+
+### Smart Remediation Suggestions
+- Per-vulnerability suggestion cards with:
+  - **Severity** tag (Critical, High, Medium, Low)
+  - **Fix** — Specific TEAL code patch
+  - **Impact** — What the vulnerability enables
+- Historical pattern matching against known exploit datasets
+
+### Real-Time Monitoring
+- Background scheduler polls deployed contracts at configurable intervals
+- Alerts via **Telegram bot** and **Supabase** push notifications
+- Dashboard shows contract health, alert history, and scan trends
+
+### NFT Certificate Minting
+- Scans scoring ≥ 70% safety are eligible for NFT minting
+- Certificate contains scan hash, risk score, and timestamp on Algorand blockchain
+- Configurable via `ALGORAND_MNEMONIC` and `ALGORAND_NETWORK` env vars
+
+### Interactive CLI Wizard
+```bash
+npx algoshield
+# or
+algoshield scan ./contract.teal
+```
+- Zero-config wizard: connects wallet → scans → mints (if ≥ 70%)
+- CI/CD flags: `--format json`, `--output report.json`, `--fail-on risk`
+- Watch mode: `algoshield watch .` for continuous scanning
+
+### Dual Frontend
+- **frontend/** — TypeScript + React (Vite, Tailwind, daisyUI, Three.js)
+- **frontend-jsx/** — JavaScript/JSX variant (simpler stack)
+
 ---
 
-## ✨ Key Features & Use Cases
-
-### 1. 📟 AI Security Scanner & Suggestion Engine (RAG)
-Upload your `.teal`, `.py`, or `.txt` file or provide an Algorand App ID to get an instant vulnerability report. 
-- **Hybrid Intelligence:** Uses a Random Forest ML model alongside a strict rule-based engine to classify contract risk.
-- **AI Fix Suggestions:** Powered by a local Phi-3-mini SLM and ChromaDB Vectorstore. It provides highly accurate, line-by-line fix recommendations based on a curated Algorand security knowledge base.
-
-### 2. 📡 24/7 Live On-Chain Monitoring
-Never take your eyes off your deployed contracts.
-- **Dual AI Detection:** Continuously polls the Algorand Indexer and runs BOTH an Isolation Forest anomaly model and a Random Forest classification model.
-- **Multi-Channel Alerts:** Automatically dispatches rich HTML email alerts and Telegram notifications the moment a critical risk is flagged on-chain.
-
-### 3. 💎 Interactive Security Dashboard
-A premium, dark-themed command center for developers.
-- **Live Terminal-Style Scanning:** Visual, modern UI to read security reports.
-- **NFT Certificate Minting:** If a contract scores ≥ 70, officially mint an ARC-69 NFT Security Certificate directly to your Pera Wallet on the Algorand testnet.
-
-### 4. 🛡️ Developer SDK & CLI
-Bring AlgoShield directly into your terminal or CI/CD pipeline.
-- Automatically scan files locally and watch for changes while you develop. Supports custom pass/fail score thresholds and machine-readable JSON outputs.
-
----
-
-## 🚀 Installation & Local Setup
-
-### Tech Stack
-- **Blockchain**: Algorand SDK (`py-algorand-sdk`), ARC-69 NFT Standard, Algonode Indexer
-- **AI/ML**: Python, Scikit-learn (Random Forest, Isolation Forest), `llama-cpp-python` (Phi-3-mini), ChromaDB
-- **Backend**: FastAPI, Motor (Async MongoDB), Supabase, APScheduler, Python `smtplib`
-- **Frontend**: React (Vite), Tailwind CSS, Framer Motion, Pera Connect
-- **SDK**: Node.js, Chokidar, Axios
-
----
-
-## 🚀 Getting Started
-
-Follow these steps to run the complete AlgoShield AI platform on your local machine.
+## Quick Start
 
 ### Prerequisites
-- **Python 3.9+**
-- **Node.js 18+**
-- **MongoDB** (running locally on port `27017` or via MongoDB Atlas)
-- **Supabase** Project (for 24/7 Monitoring)
-- **C/C++ Build Tools** (Required for installing `llama-cpp-python` and `chromadb` on some OS)
+- Python 3.10+
+- Node.js 20+
+- MongoDB (local or Atlas)
+- Algorand node / PureStake API key
 
-### 1. Clone the Repository
+### Backend
+
 ```bash
-git clone https://github.com/your-username/AlgoShield_AI.git
-cd AlgoShield_AI/projects
-```
-
-### 2. Configure Environment Variables
-Navigate to the `projects/backend` directory and create a `.env` file:
-```bash
-cd backend
-cp .env.template .env
-```
-Populate the `.env` file with the following variables:
-```env
-# MongoDB (Main DB - scans, certificates)
-MONGODB_URL=mongodb://localhost:27017
-MONGODB_DB_NAME=algoshield
-
-# Supabase (Monitoring DB - 24hr monitoring)
-SUPABASE_URL=https://your-project-id.supabase.co
-SUPABASE_KEY=your_service_role_key
-
-# Algorand (Blockchain)
-PLATFORM_MNEMONIC=your 25 word mnemonic
-INDEXER_API_URL=https://mainnet-idx.algonode.cloud
-
-# SMTP Email Alerts
-SMTP_USER=your-email@gmail.com
-SMTP_PASSWORD=your_app_password
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=465
-ALERT_FROM_EMAIL=AlgoShield AI <your-email@gmail.com>
-
-# Telegram Alerts
-TELEGRAM_BOT_TOKEN=your_bot_token
-```
-
-### 3. Start the Backend API
-Install the Python dependencies and run the server. (It is highly recommended to use a virtual environment).
-```bash
-# Inside projects/backend
+cd projects/backend
 python -m venv venv
-
-# Activate venv (Windows)
-venv\Scripts\activate
-
+venv\Scripts\activate    # Windows
 pip install -r requirements.txt
-
-# Run the backend
-python app.py
+cp .env.example .env     # edit with your keys
+uvicorn app:app --reload --port 8000
 ```
-*Note: The first time you request AI suggestions, the backend will automatically download the Phi-3-mini model from HuggingFace.*
 
-### 4. Start the Frontend Dashboard
-Open a new terminal window, navigate to the frontend directory, and start the Vite development server.
+### Frontend
+
 ```bash
 cd projects/frontend
 npm install
 npm run dev
 ```
-Visit `http://localhost:5173` in your browser.
 
-### 5. Run the CLI SDK
-To test contracts directly from your terminal:
+### CLI SDK
+
 ```bash
 cd projects/algoshield-sdk
 npm install
-node bin/algoshield.js scan ./my-contract.teal
+npm link                  # makes `algoshield` available globally
+algoshield                # interactive wizard
 ```
 
 ---
 
-## 🎬 Demo Flow Instructions
+## Project Structure
 
-1. **Connect Wallet:** Click "Connect Wallet" and pair your Pera Wallet (Testnet).
-2. **Scan Contract:** Go to the Dashboard and click "Scan a Contract". Upload a vulnerable `.teal` file (e.g., from `dataset/contracts/risky/`).
-3. **View AI Fixes:** Once the scan completes, click **🧠 Get AI Suggestions** to load the AI-generated fixes via SLM.
-4. **Mint Certificate:** Upload a safe contract (score >= 70). Click "Mint NFT Certificate" and approve the transaction in Pera Wallet.
-5. **Start Monitoring:** Go to the "Monitor" tab. Enter an App ID, Account Address, and Email. Click "Start Monitoring" to register it in Supabase.
-6. **Trigger Alert:** Use a test script to send a risky transaction to the monitored App ID. You should see the alert appear in the live feed and receive an Email/Telegram notification.
+```
+├── projects/
+│   ├── backend/               # FastAPI server
+│   │   ├── app.py             # Main entrypoint & routes
+│   │   ├── database.py        # MongoDB connection
+│   │   ├── blockchain/        # Algorand integration
+│   │   │   └── nft_minter.py  # NFT certificate minting
+│   │   ├── ml_models/         # ML inference & suggestions
+│   │   │   ├── inference.py   # Model prediction
+│   │   │   ├── suggester.py   # Remediation generation
+│   │   │   └── slm_inference.py
+│   │   ├── routes/            # API endpoints
+│   │   │   ├── scan.py        # Contract scanning
+│   │   │   ├── monitor.py     # Monitoring CRUD
+│   │   │   └── certificates.py
+│   │   ├── services/
+│   │   │   └── monitor_service.py  # Background scheduler
+│   │   ├── utils/              # Feature extraction, RAG pipeline
+│   │   └── .env                # Credentials (gitignored)
+│   ├── frontend/              # React/TypeScript UI
+│   │   ├── src/
+│   │   │   ├── pages/         # Dashboard, Scanner, etc.
+│   │   │   └── components/    # SuggestionPanel, UploadCard, etc.
+│   │   └── package.json
+│   ├── frontend-jsx/          # Alternate JSX frontend
+│   ├── algoshield-sdk/        # Node.js CLI + SDK
+│   │   ├── bin/algoshield.js  # CLI entrypoint
+│   │   ├── src/               # Core SDK (formatter, scanner)
+│   │   └── package.json
+│   ├── contracts/             # Algorand smart contracts
+│   │   ├── smart_contracts/   # Safe & sample contracts
+│   │   └── tests/
+│   ├── dataset/               # ML training data
+│   ├── docs/                  # Documentation
+│   ├── scripts/               # Utility scripts
+│   └── research/              # Research materials
+```
 
----
+## Environment Variables
 
-## 🤝 Team QANTAS
+| Variable | Description |
+|---|---|
+| `MONGODB_URL` | MongoDB connection string |
+| `SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_KEY` | Supabase service role key |
+| `TELEGRAM_BOT_TOKEN` | Telegram bot API token |
+| `TELEGRAM_CHAT_ID` | Telegram alert chat ID |
+| `ALGORAND_MNEMONIC` | Algorand wallet mnemonic (for NFT minting) |
+| `ALGORAND_NETWORK` | `mainnet` or `testnet` |
+| `INDEXER_URL` | Algorand Indexer URL |
+| `INDEXER_PORT` | Algorand Indexer port |
 
-Developed with ❤️ for the **Algorand 3.0 Hack Series 🐍**.
+## API Endpoints
 
-*Securing the decentralized future, one block at a time.* 🛡️
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/scan` | Upload TEAL file for analysis |
+| GET | `/api/scan/{id}` | Get scan results |
+| GET | `/api/scans` | List all scans |
+| POST | `/api/monitor` | Create monitoring job |
+| GET | `/api/monitor` | List monitoring jobs |
+| DELETE | `/api/monitor/{id}` | Remove monitoring job |
+| POST | `/api/mint/{scan_id}` | Mint scan certificate NFT |
+| GET | `/api/certificates` | List minted certificates |
+
+## CLI Usage
+
+```bash
+# Interactive mode
+algoshield
+
+# Scan a specific contract
+algoshield scan ./contracts/risky/12174882.teal
+
+# JSON output for CI/CD
+algoshield scan ./contract.teal --format json --output report.json
+
+# Watch directory for changes
+algoshield watch ./contracts
+
+# Mint certificate for a completed scan
+algoshield mint <scan-id>
+```
+
+## License
+
+MIT
+
+## Repository
+
+[https://github.com/Kaustubh2512/AlgoShield-AI](https://github.com/Kaustubh2512/AlgoShield-AI)

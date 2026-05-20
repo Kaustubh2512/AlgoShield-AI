@@ -1,0 +1,15 @@
+#pragma version 6
+// Sample vulnerable TEAL - Missing RekeyTo and CloseRemainderTo checks
+txn TypeEnum
+int pay
+==
+assert
+txn Amount
+int 1000000
+>=
+assert
+txn Receiver
+addr AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+==
+assert
+int 1

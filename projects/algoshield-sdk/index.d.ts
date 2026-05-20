@@ -1,9 +1,17 @@
 export interface Suggestion {
   line: number;
-  type?: string;
-  issue?: string;
-  severity: 'Critical' | 'High' | 'Medium' | 'Low';
-  suggestion?: string;
+  vulnerability: string;
+  description: string;
+  fix: string;
+  severity: 'Safe' | 'Low' | 'Medium' | 'High' | 'Critical';
+  analysis: string;
+  attack_vector: string;
+  impact: string;
+  recommended_patch: string;
+  patched_code: string;
+  best_practices: string;
+  vulnerable_code: string;
+  why_fix_works: string;
 }
 
 export interface ScanResult {
@@ -15,6 +23,14 @@ export interface ScanResult {
   contract_hash: string;
   summary: string;
   label: string;
+}
+
+export interface MintResult {
+  cert_id: string;
+  asset_id: number;
+  txn_id: string;
+  explorer_url: string;
+  minted_at: string;
 }
 
 export interface AlgoShieldConfig {
@@ -30,9 +46,11 @@ export declare class AlgoShield {
   scanFile(filePath: string): Promise<ScanResult>;
   scanDir(dirPath: string): Promise<ScanResult[]>;
   getReport(scanId: string): Promise<ScanResult>;
+  mintCertificate(scanId: string, walletAddress: string): Promise<MintResult>;
   watch(dirPath: string, options?: any): any;
 }
 
 export declare function scan(code: string, opts?: AlgoShieldConfig): Promise<ScanResult>;
 export declare function scanFile(fp: string, opts?: AlgoShieldConfig): Promise<ScanResult>;
 export declare function watch(dp: string, opts?: AlgoShieldConfig): any;
+export declare function mint(scanId: string, walletAddress: string, opts?: AlgoShieldConfig): Promise<MintResult>;
