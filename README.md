@@ -63,9 +63,11 @@ npm run dev
 ### CLI
 ```bash
 cd projects/algoshield-sdk
-npm install && npm link
-algoshield                    # interactive wizard
-algoshield scan ./contract.teal --format json
+npm install
+node bin\algoshield.js              # interactive wizard
+node bin\algoshield.js scan c.teal  # quick scan
+node bin\algoshield.js mint <id> --wallet <addr>  # mint NFT
+node bin\algoshield.js watch .      # watch for changes
 ```
 
 ---
