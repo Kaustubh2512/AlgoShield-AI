@@ -234,6 +234,16 @@ def get_rag_suggestions(features: Dict[str, Any], rule_based: List[Dict]) -> Lis
     # 1. Retrieve knowledge base context
     context_chunks = retrieve_context(query, top_k=3)
     if not context_chunks:
+        if not rule_based:
+            rule_based.append({
+                "id": "ML_Heuristic",
+                "issue": "Structural Risk Detected",
+                "severity": "Medium",
+                "source": "ml-model",
+                "explanation": "The AI model identified suspicious structural patterns in the contract logic, but the local knowledge base is unavailable to provide a specific context. Please review the execution paths and ensure standard validation checks are present.",
+                "fix": "Review logic for unvalidated inputs or open execution paths.",
+                "lines": [],
+            })
         return rule_based
 
     # 2. Extract structured SLM response
