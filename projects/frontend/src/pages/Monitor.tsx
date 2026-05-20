@@ -29,7 +29,7 @@ export const Monitor = () => {
   const startMonitoring = async () => {
     if (!appId) return;
     try {
-      const res = await fetch('http://127.0.0.1:8000/monitor/start', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/monitor/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -54,7 +54,7 @@ export const Monitor = () => {
     setIsMonitoring(false);
     if (jobId) {
       try {
-        await fetch(`http://127.0.0.1:8000/monitor/stop/${jobId}`, {
+        await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/monitor/stop/${jobId}`, {
           method: 'POST'
         });
       } catch (e) {}
@@ -67,7 +67,7 @@ export const Monitor = () => {
     if (isMonitoring && appId) {
       interval = setInterval(async () => {
         try {
-          const res = await fetch(`http://127.0.0.1:8000/monitor/${appId}/alerts?wallet_address=${walletAddress}`);
+          const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/monitor/${appId}/alerts?wallet_address=${walletAddress}`);
           const data = await res.json();
           if (res.ok && data.alerts && data.alerts.length > 0) {
             setAlerts(data.alerts.map((a: any) => ({
