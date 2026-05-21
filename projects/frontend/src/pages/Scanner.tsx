@@ -2,23 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { Navbar } from '../components/Navbar';
 import { useWallet } from '../context/WalletContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ShieldCheck, UploadCloud, Search, ShieldAlert, History } from 'lucide-react';
+import { ShieldCheck, UploadCloud, Search, ShieldAlert, History, ArrowLeft } from 'lucide-react';
 import { ScoreGauge } from '../components/ScoreGauge';
 import { VulnerabilityCard } from '../components/VulnerabilityCard';
 import { CodeViewer } from '../components/CodeViewer';
 import { SuggestionPanel } from '../components/SuggestionPanel';
 import { motion } from 'framer-motion';
 import SpotlightCard from '../components/SpotlightCard';
+import { BackButton } from '../components/BackButton';
+import { useSnackbar } from 'notistack';
 
 export const Scanner = () => {
   const { walletAddress } = useWallet();
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
 
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<any>(null);
   const [appId, setAppId] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const [isMinting, setIsMinting] = useState(false);
+  const [mintedAssetId, setMintedAssetId] = useState<string | null>(null);
   const [fileState, setFileState] = useState<File | null>(null);
 
   const [suggestions, setSuggestions] = useState<any>(null);
@@ -95,7 +99,7 @@ export const Scanner = () => {
       setShowSuggestions(false);
     } catch (err) {
       console.error(err);
-      alert('Failed to load previous scan details.');
+      enqueueSnackbar('Failed to load previous scan details.', { variant: 'error' });
     }
   };
 
@@ -112,9 +116,13 @@ export const Scanner = () => {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail || 'Minting failed');
-      alert(`Certificate Minted Successfully!\nAsset ID: ${data.asset_id}\nTxn ID: ${data.txn_id}`);
+      setMintedAssetId(data.asset_id);
+      enqueueSnackbar(`Certificate Minted Successfully! Asset ID: ${data.asset_id}`, {
+        variant: 'success',
+        autoHideDuration: 8000,
+      });
     } catch (e: any) {
-      alert(`Minting error: ${e.message}`);
+      enqueueSnackbar(`Minting error: ${e.message}`, { variant: 'error' });
     } finally {
       setIsMinting(false);
     }
@@ -149,6 +157,7 @@ export const Scanner = () => {
   const runScan = async (file?: File) => {
     setIsScanning(true);
     setScanResult(null);
+    setMintedAssetId(null);
 
     const formData = new FormData();
     formData.append('wallet_address', walletAddress || '');
@@ -184,7 +193,7 @@ export const Scanner = () => {
       localStorage.setItem(`algoshield_scan_${data.scan_id}`, JSON.stringify(formattedData));
     } catch (error) {
       console.error('Scan error:', error);
-      alert('Failed to scan contract. Please try again.');
+      enqueueSnackbar('Failed to scan contract. Please try again.', { variant: 'error' });
     } finally {
       setIsScanning(false);
     }
@@ -234,6 +243,7 @@ export const Scanner = () => {
       <Navbar />
 
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
+        <BackButton />
         {!scanResult ? (
           <div className="max-w-3xl mx-auto mt-10">
             <div className="text-center mb-10">
@@ -367,7 +377,7 @@ export const Scanner = () => {
                 <p className="text-gray-400">Analysis complete. Review the findings below.</p>
               </div>
               
-              <button onClick={() => setScanResult(null)} className="btn-secondary">
+              <button onClick={() => { setScanResult(null); setMintedAssetId(null); }} className="btn-secondary">
                 Scan Another
               </button>
             </div>
@@ -393,7 +403,21 @@ export const Scanner = () => {
                   </div>
 
                   <div className="mt-8">
-                    {scanResult.score > 70 ? (
+                    {mintedAssetId ? (
+                      <div className="space-y-3">
+                        <div className="bg-safe/10 border border-safe/50 rounded-lg p-4 text-center">
+                          <ShieldCheck className="w-10 h-10 text-safe mx-auto mb-2" />
+                          <h4 className="text-safe font-bold font-syne text-lg">Certificate Minted!</h4>
+                          <p className="text-gray-400 text-xs font-mono mt-1">Asset ID: {mintedAssetId}</p>
+                        </div>
+                        <button
+                          onClick={() => navigate('/certificates')}
+                          className="btn-primary w-full"
+                        >
+                          View in Certificates
+                        </button>
+                      </div>
+                    ) : scanResult.score > 70 ? (
                       <button 
                         onClick={handleMint}
                         disabled={isMinting}

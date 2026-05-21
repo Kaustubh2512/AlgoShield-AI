@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { WalletProvider, useWallet } from './context/WalletContext';
+import { SnackbarProvider } from 'notistack';
 import { Landing } from './pages/Landing';
 import { Dashboard } from './pages/Dashboard';
 import { Scanner } from './pages/Scanner';
@@ -64,7 +65,14 @@ export default function App() {
   return (
     <WalletProvider>
       <BrowserRouter>
-        <AppContent />
+        <SnackbarProvider
+          maxSnack={5}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          autoHideDuration={5000}
+          classes={{ containerRoot: 'toast-container' }}
+        >
+          <AppContent />
+        </SnackbarProvider>
       </BrowserRouter>
     </WalletProvider>
   );

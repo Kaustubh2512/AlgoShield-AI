@@ -12,16 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Note: The scheduler lifecycle is managed by app.py's lifespan context.
-# This module only exports the run_monitoring_cycle function.
-
 def run_monitoring_cycle():
-    """
-    Called every 30 seconds by APScheduler.
-    Fetches new transactions for each active monitor job,
-    runs BOTH anomaly detection (Isolation Forest) AND AI classification (Random Forest),
-    saves alerts, sends Email + Telegram messages.
-    """
     import asyncio
     try:
         try:
@@ -32,7 +23,7 @@ def run_monitoring_cycle():
 
         supabase = get_supabase_client()
 
-        response = supabase.table("monitored_contracts").select("*").eq("is_active", True).execute()
+        response = supabase.table("monitored_contracts").select("*").eq("status", "active").execute()
         active_jobs = response.data
 
         if not active_jobs:
@@ -42,93 +33,91 @@ def run_monitoring_cycle():
             job_id = job["id"]
 
             try:
-                # 1. Fetch new transactions from Algorand Indexer
                 new_txns = loop.run_until_complete(fetch_contract_transactions(
-                    contract_address=job["account_address"],
-                    min_round=job.get("last_round", 0)
+                    contract_address=job["contract_address"],
+                    min_round=job.get("last_txn", 0)
                 ))
 
                 if not new_txns:
                     continue
 
-                # 2. Update the last seen round based on highest confirmed-round in new txns
-                highest_round = job.get("last_round", 0) or 0
+                highest_round = job.get("last_txn", 0) or 0
                 for txn in new_txns:
                     rnd = txn.get("confirmed-round", 0)
                     if rnd > highest_round:
                         highest_round = rnd
 
                 supabase.table("monitored_contracts").update(
-                    {"last_round": highest_round + 1}
+                    {"last_txn": highest_round + 1}
                 ).eq("id", job_id).execute()
 
-                # 3. Get the Isolation Forest anomaly detector
-                ai_monitor = get_monitor(str(job["app_id"]))
+                ai_monitor = get_monitor(str(job["contract_address"]))
                 ai_monitor.add_transactions(new_txns)
 
-                # 4. Check each new transaction with BOTH models
-                for txn in new_txns:
-                    # Model 1: Isolation Forest anomaly detection
-                    anomaly_result = ai_monitor.check_transaction(txn)
+                # Parse delimited email
+                email_val = job.get("email", "") or ""
+                alert_email = email_val
+                telegram_chat_id = None
+                app_id = 0
+                if "##" in email_val:
+                    parts = email_val.split("##")
+                    alert_email = parts[0]
+                    if len(parts) > 1 and parts[1]:
+                        telegram_chat_id = parts[1]
+                    if len(parts) > 2 and parts[2]:
+                        try:
+                            app_id = int(parts[2])
+                        except ValueError:
+                            app_id = 0
 
-                    # Model 2: Random Forest AI classification
+                for txn in new_txns:
+                    anomaly_result = ai_monitor.check_transaction(txn)
                     ai_result = analyze_transaction(txn)
 
-                    # Alert if EITHER model flags the transaction
                     should_alert = anomaly_result.get("is_anomaly") or ai_result.get("is_risky")
 
                     if should_alert:
-                        # Combine scores from both models for richer alert data
                         combined_severity = anomaly_result.get("severity", "Medium")
                         if ai_result.get("is_risky"):
-                            # AI classification takes priority for severity
                             combined_severity = ai_result.get("risk_level", "MEDIUM")
 
                         alert_doc = {
-                            "monitor_job_id": job_id,
-                            "app_id":         job["app_id"],
-                            "txn_id":         txn.get("id"),
-                            "anomaly_score":  anomaly_result.get("anomaly_score", 0.0),
-                            "ai_label":       ai_result.get("label", "UNKNOWN"),
-                            "ai_risk_level":  ai_result.get("risk_level", "UNKNOWN"),
-                            "severity":       combined_severity,
-                            "description":    anomaly_result.get("description") or ai_result.get("error", "Unknown"),
-                            "is_read":        False
+                            "contract_address": job["contract_address"],
+                            "message": anomaly_result.get("description") or ai_result.get("error", "Unknown"),
+                            "risk_level": combined_severity,
+                            "timestamp": datetime.utcnow().isoformat()
                         }
                         supabase.table("alerts").insert(alert_doc).execute()
 
-                        print(f"🚨 Alert — App {job['app_id']} | {combined_severity} | {alert_doc['description']}")
+                        print(f" Alert — {job['contract_address'][:12]}... | {combined_severity} | {alert_doc['message']}")
 
-                        # Build a unified result dict for alert channels
                         unified_result = {
                             "severity": combined_severity,
-                            "description": alert_doc["description"],
+                            "description": alert_doc["message"],
                             "anomaly_score": anomaly_result.get("anomaly_score", 0.0),
                             "label": ai_result.get("label", "UNKNOWN"),
                             "risk_level": ai_result.get("risk_level", "UNKNOWN"),
                             "prediction": ai_result.get("prediction", -1),
                         }
 
-                        # 5. Send Telegram notification if configured
-                        if job.get("telegram_chat_id"):
+                        if telegram_chat_id:
                             try:
-                                send_telegram_alert(job["telegram_chat_id"], job["app_id"], unified_result)
+                                send_telegram_alert(telegram_chat_id, app_id, unified_result)
                             except Exception as e:
-                                print(f"⚠️ Telegram alert failed: {e}")
+                                print(f" Telegram alert failed: {e}")
 
-                        # 6. Send Email notification if configured
-                        if job.get("alert_email"):
+                        if alert_email:
                             try:
                                 send_alert_email(
-                                    to_email=job["alert_email"],
-                                    contract_address=job["account_address"],
+                                    to_email=alert_email,
+                                    contract_address=job["contract_address"],
                                     txn_id=txn.get("id", "Unknown"),
                                     txn_type=txn.get("tx-type", "Unknown"),
                                     risk_level=combined_severity,
                                     label=ai_result.get("label", anomaly_result.get("description", "Unknown"))
                                 )
                             except Exception as e:
-                                print(f"⚠️ Email alert failed: {e}")
+                                print(f" Email alert failed: {e}")
 
             except Exception as e:
                 print(f"Error in monitor job {job_id}: {e}")

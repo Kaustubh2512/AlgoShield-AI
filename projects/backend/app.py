@@ -1,5 +1,5 @@
 # backend/app.py
-import uuid, hashlib, os
+import uuid, hashlib, os, logging
 from dotenv import load_dotenv
 load_dotenv()
 from datetime import datetime
@@ -66,11 +66,23 @@ app = FastAPI(title="AlgoShield AI", version="2.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
+        "https://*.vercel.app",
+    ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    from fastapi.responses import JSONResponse
+    logger.error(f"Unhandled error: {exc}", exc_info=True)
+    return JSONResponse(status_code=500, content={"detail": f"Internal server error: {str(exc)[:200]}"})
 
 from routes.scan import router as scan_router
 from routes.monitor import router as monitor_router

@@ -178,9 +178,25 @@ node_modules
 # Submodules/Migrated repos
 AlgoShield_AI/
 
-# AI Models
-projects/backend/ml_models/slm/
-projects/backend/model/slm/
+# Reorganized Folder Rules
+/backend/venv/
+/backend/.venv/
+/backend/__pycache__/
+/backend/ml_models/slm/
+/backend/model/slm/
+/backend/model/vectorstore/
+/backend/ml_models/vectorstore/
+/backend/**/*.py[cod]
+
+/frontend/node_modules/
+/frontend/dist/
+/frontend/playwright-report/
+/frontend/test-results/
+/frontend/vite.config.ts.timestamp-*.mjs
+
+/sdk/node_modules/
+
+# AI Models (global patterns)
 *.gguf
 *.bin
 *.pt

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Award, ExternalLink, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import SpotlightCard from '../components/SpotlightCard';
+import { BackButton } from '../components/BackButton';
 
 export const Certificates = () => {
   const { walletAddress } = useWallet();
@@ -35,6 +36,7 @@ export const Certificates = () => {
       <Navbar />
 
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full min-h-screen relative z-10">
+        <BackButton />
         <div className="mb-12">
           <h1 className="text-4xl font-syne font-bold mb-2">My Certificates</h1>
           <p className="text-gray-400">Verifiable on-chain proofs of security for your smart contracts.</p>

@@ -2,7 +2,7 @@ services:
   - type: web
     name: algoshield-backend
     runtime: python
-    repo: https://github.com/your-username/your-repo
+    repo: https://github.com/Kaustubh2512/AlgoShield-AI
     branch: main
     rootDir: projects/backend
     buildCommand: pip install -r requirements-render.txt

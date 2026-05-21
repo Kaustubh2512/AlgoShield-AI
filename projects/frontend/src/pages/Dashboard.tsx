@@ -5,10 +5,13 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Search, Award, Activity, History, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import SpotlightCard from '../components/SpotlightCard';
+import { BackButton } from '../components/BackButton';
+import { useSnackbar } from 'notistack';
 
 export const Dashboard = () => {
   const { walletAddress } = useWallet();
   const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
 
   const [recentScans, setRecentScans] = useState<any[]>([]);
 
@@ -53,7 +56,7 @@ export const Dashboard = () => {
       navigate('/scan', { state: { scanResult: formattedData } });
     } catch (err) {
       console.error(err);
-      alert('Failed to load previous scan details.');
+      enqueueSnackbar('Failed to load previous scan details.', { variant: 'error' });
     }
   };
 
@@ -64,6 +67,7 @@ export const Dashboard = () => {
       <Navbar />
 
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
+        <BackButton />
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
