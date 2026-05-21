@@ -64,12 +64,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="AlgoShield AI", version="2.0.0", lifespan=lifespan)
 
-# Allow frontend origins in production - update this with your Vercel URL
-ALLOWED_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
