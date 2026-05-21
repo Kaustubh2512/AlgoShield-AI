@@ -171,6 +171,7 @@ node_modules
 # Databases
 *.db
 *.sqlite3
+!projects/backend/model/vectorstore/*.sqlite3
 
 # IDEs
 .kilo/

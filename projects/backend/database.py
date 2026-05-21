@@ -5,6 +5,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 ca = certifi.where()
+
+# Fallback defaults so the module never fails to import
+scans_col = None
+certificates_col = None
+monitor_jobs_col = None
+alerts_col = None
+
 try:
     MONGODB_URL = os.getenv("MONGODB_URL")
     if MONGODB_URL:
@@ -32,8 +39,14 @@ except Exception as e:
     print(f"DB init warning: {e}")
 
 async def create_indexes():
-    await scans_col.create_index("wallet_address")
-    await scans_col.create_index("created_at")
-    await certificates_col.create_index("wallet_address")
-    await monitor_jobs_col.create_index([("app_id", 1), ("wallet_address", 1)])
-    await alerts_col.create_index("monitor_job_id")
+    if scans_col is None:
+        print("DB init skipped: MongoDB not connected")
+        return
+    try:
+        await scans_col.create_index("wallet_address")
+        await scans_col.create_index("created_at")
+        await certificates_col.create_index("wallet_address")
+        await monitor_jobs_col.create_index([("app_id", 1), ("wallet_address", 1)])
+        await alerts_col.create_index("monitor_job_id")
+    except Exception as e:
+        print(f"DB index creation failed: {e}")

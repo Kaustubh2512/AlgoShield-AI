@@ -1,12 +1,12 @@
 # routes/scan.py
-import hashlib
+import hashlib, os
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Header, Depends
 from database import scans_col
 from models import new_scan_doc
 
 router = APIRouter()
 
-VALID_API_KEYS = {"demo-key-123", "hackathon-key-456"}
+VALID_API_KEYS = set(os.getenv("VALID_API_KEYS", "demo-key-123,hackathon-key-456").split(","))
 
 async def verify_api_key(x_api_key: str = Header(None)):
     if x_api_key and x_api_key not in VALID_API_KEYS:

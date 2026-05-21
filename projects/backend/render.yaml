@@ -1,0 +1,48 @@
+services:
+  - type: web
+    name: algoshield-backend
+    runtime: python
+    repo: https://github.com/your-username/your-repo
+    branch: main
+    rootDir: projects/backend
+    buildCommand: pip install -r requirements-render.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: MONGODB_URL
+        sync: false
+      - key: MONGODB_DB_NAME
+        value: algoshield
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: INDEXER_API_URL
+        value: https://mainnet-idx.algonode.cloud
+      - key: PLATFORM_MNEMONIC
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "465"
+      - key: ALERT_FROM_EMAIL
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: VECTORSTORE_DIR
+        value: ml_models/vectorstore
+      - key: SLM_MODEL_DIR
+        value: ml_models/slm
+      - key: CHROMA_COLLECTION
+        value: algoshield_knowledge
+      - key: EMBEDDING_MODEL
+        value: all-MiniLM-L6-v2
+      - key: RAG_TOP_K
+        value: "4"
+      - key: SLM_MAX_TOKENS
+        value: "250"
+      - key: SLM_TIMEOUT_SEC
+        value: "30"

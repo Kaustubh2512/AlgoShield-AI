@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+python-multipart
+motor
+pymongo
+python-dotenv
+apscheduler
+requests
+aiofiles
+py-algorand-sdk
+scikit-learn
+joblib
+numpy
+dnspython
+supabase
+httpx
+pydantic[email]

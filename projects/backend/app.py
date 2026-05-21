@@ -1,19 +1,13 @@
 # backend/app.py
-import uuid, hashlib, os, requests
+import uuid, hashlib, os
 from dotenv import load_dotenv
 load_dotenv()
 from datetime import datetime
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, UploadFile, File, HTTPException, Form
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
 
-from utils.feature_extractor import extract_features_from_teal
-from utils.feature_engineer import engineer_features
-from ml_models.suggester import generate_suggestions
-# Use ml_models instead of models to maintain directory fix
-from ml_models.inference import predict
 from database import scans_col, certificates_col, monitor_jobs_col, alerts_col, create_indexes
 
 # ── APScheduler for monitoring
@@ -70,9 +64,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="AlgoShield AI", version="2.0.0", lifespan=lifespan)
 
+# Allow frontend origins in production - update this with your Vercel URL
+ALLOWED_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -82,104 +78,6 @@ from routes.scan import router as scan_router
 from routes.monitor import router as monitor_router
 app.include_router(scan_router)
 app.include_router(monitor_router)
-
-
-# ──────────────────────────────────────────────
-# ROUTE 1 — Scan (expanded from original /analyze)
-# ──────────────────────────────────────────────
-@app.post("/analyze")
-async def analyze_smart_contract(
-    file: UploadFile = File(...),
-    wallet_address: str = Form(default="anonymous")
-):
-    if not file.filename.endswith('.teal'):
-        raise HTTPException(status_code=400, detail="Only .teal files are allowed")
-    try:
-        content = (await file.read()).decode('utf-8')
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to read file: {e}")
-
-    try:
-        # Step 1: Use the comprehensive scanner logic
-        from scanner import scan_contract
-        result = scan_contract(content)
-        
-        # Step 2: Map scanner results to match frontend expectations
-        # The frontend expects 'score', 'risk_level', 'vulnerabilities', 'contract_code'
-        vulnerabilities = result.get("suggestions", [])
-        score = result.get("score", 50)
-        risk_level = result.get("risk_level", "Risky")
-        prediction_label = result.get("ml_label", "SUSPICIOUS") # Fallback from summary if needed
-        
-        # Step 3: Save to MongoDB for persistent history
-        scan_id = str(uuid.uuid4())
-        contract_hash = hashlib.sha256(content.encode()).hexdigest()
-
-        doc = {
-            "_id": scan_id,
-            "wallet_address": wallet_address,
-            "filename": file.filename,
-            "contract_code": content,
-            "contract_hash": contract_hash,
-            "score": int(score),
-            "risk_level": risk_level,
-            "ml_label": result.get("label", "SUSPICIOUS"), # Correct key from Predictor
-            "vulnerabilities": vulnerabilities,
-            "summary": result.get("summary", ""),
-            "created_at": datetime.utcnow()
-        }
-        await scans_col.insert_one(doc)
-
-        # Step 4: Final response
-        return {
-            "scan_id": scan_id,
-            "score": int(score),
-            "risk_level": risk_level,
-            "vulnerabilities": vulnerabilities,
-            "contract_code": content,
-            "contract_hash": contract_hash,
-            "summary": result.get("summary", ""),
-            "label": result.get("label", "SUSPICIOUS")
-        }
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
-
-# ──────────────────────────────────────────────
-# ROUTE 2 — Scan history for a wallet
-# ──────────────────────────────────────────────
-@app.get("/scans/{wallet_address}")
-async def get_scans(wallet_address: str):
-    cursor = scans_col.find(
-        {"wallet_address": wallet_address},
-        {"contract_code": 0}  # don't return full code in list
-    ).sort("created_at", -1).limit(10)
-
-    results = []
-    async for doc in cursor:
-        results.append({
-            "scan_id":    doc["_id"],
-            "filename":   doc.get("filename"),
-            "score":      doc.get("score"),
-            "risk_level": doc.get("risk_level"),
-            "ml_label":   doc.get("ml_label"),
-            "vuln_count": len(doc.get("vulnerabilities", [])),
-            "created_at": doc["created_at"].isoformat()
-        })
-    return results
-
-# ──────────────────────────────────────────────
-# ROUTE 3 — Get single scan
-# ──────────────────────────────────────────────
-@app.get("/scan/{scan_id}")
-async def get_scan(scan_id: str):
-    doc = await scans_col.find_one({"_id": scan_id})
-    if not doc:
-        raise HTTPException(status_code=404, detail="Scan not found")
-    doc["scan_id"] = doc.pop("_id")
-    doc["created_at"] = doc["created_at"].isoformat()
-    return doc
 
 # ──────────────────────────────────────────────
 # ROUTE 4 — Mint NFT Certificate
