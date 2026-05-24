@@ -40,6 +40,16 @@ try:
 except Exception as e:
     print(f"DB init warning: {e}")
 
+# ── Keepalive: ping MongoDB every 2 min to prevent Render+Mongo from going idle
+def keepalive_db():
+    if _sync_db is not None:
+        try:
+            _sync_db.command('ping')
+        except Exception:
+            pass  # will retry in 2 min
+    else:
+        print("[KEEPALIVE] _sync_db not available")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup logic
@@ -52,6 +62,7 @@ async def lifespan(app: FastAPI):
     try:
         from services.monitor_service import run_monitoring_cycle
         scheduler.add_job(run_monitoring_cycle, 'interval', seconds=30, id='monitor', replace_existing=True)
+        scheduler.add_job(keepalive_db, 'interval', seconds=120, id='keepalive_db', replace_existing=True)
         scheduler.start()
         print("[OK] Background Monitoring started")
     except Exception as e:
@@ -168,7 +179,14 @@ async def get_certificates(wallet_address: str):
 # ──────────────────────────────────────────────
 @app.get("/health")
 def health():
-    return {"status": "AlgoShield AI running", "version": "2.0.0"}
+    db_ok = False
+    if _sync_db is not None:
+        try:
+            _sync_db.command('ping')
+            db_ok = True
+        except Exception:
+            pass
+    return {"status": "AlgoShield AI running", "version": "2.0.0", "mongodb": "connected" if db_ok else "disconnected"}
 
 if __name__ == "__main__":
     import uvicorn
